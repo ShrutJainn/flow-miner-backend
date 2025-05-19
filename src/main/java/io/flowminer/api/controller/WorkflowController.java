@@ -1,6 +1,7 @@
 package io.flowminer.api.controller;
 
 import io.flowminer.api.dto.CreateWorkflowRequestDTO;
+import io.flowminer.api.dto.DeleteWorkflowDTO;
 import io.flowminer.api.enums.WorkflowEnum;
 import io.flowminer.api.model.Workflow;
 import io.flowminer.api.repository.WorkflowRepository;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -39,5 +41,14 @@ public class WorkflowController {
 
         workflowRepository.save(workflow);
         return workflow;
+    }
+
+    @DeleteMapping("/delete")
+    public void deleteWorkflow(@RequestParam String id, @RequestParam String userId) {
+        Optional<Workflow> workflow = workflowRepository.findByIdAndUserId(UUID.fromString(id), userId);
+
+        if(workflow.isEmpty()) throw new RuntimeException("Workflow not found or doesn't belong to the user");
+
+        workflowRepository.delete(workflow.get());
     }
 }

@@ -11,3 +11,5 @@ public class CreateWorkflowRequestDTO {
     public String definition;
     public WorkflowEnum status;
 }
+
+
