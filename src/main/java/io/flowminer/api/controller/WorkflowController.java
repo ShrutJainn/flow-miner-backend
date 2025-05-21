@@ -24,7 +24,7 @@ public class WorkflowController {
         this.workflowRepository = workflowRepository;
     }
 
-    @GetMapping
+    @GetMapping("/user")
     public List<Workflow> getWorkflowsForUser(@RequestParam String userId) {
         return workflowService.getWorkflowsByUser(userId);
     }
@@ -50,5 +50,13 @@ public class WorkflowController {
         if(workflow.isEmpty()) throw new RuntimeException("Workflow not found or doesn't belong to the user");
 
         workflowRepository.delete(workflow.get());
+    }
+
+    @GetMapping("/{workflowId}")
+    public Workflow getWorkflowById(@PathVariable String workflowId) {
+        Optional<Workflow> workflow = workflowRepository.findById(UUID.fromString(workflowId));
+        if(workflow.isEmpty()) throw new RuntimeException("Workflow not found");
+
+        return workflow.get();
     }
 }
