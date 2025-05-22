@@ -1,0 +1,30 @@
+{
+  "nodes": [
+    {
+      "id": "12bcea78-a01d-467c-9d1c-6c2206d5183f",
+      "type": "FlowMinerNode",
+      "dragHandle": ".drag-handle",
+      "data": {
+        "type": "LAUNCH_BROWSER",
+        "inputs": {
+          "Website Url": "sdfrgsdfg"
+        }
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "measured": {
+        "width": 420,
+        "height": 175
+      },
+      "selected": true
+    }
+  ],
+  "edges": [],
+  "viewport": {
+    "x": 178,
+    "y": 80.70833333333334,
+    "zoom": 0.8547619047619047
+  }
+}

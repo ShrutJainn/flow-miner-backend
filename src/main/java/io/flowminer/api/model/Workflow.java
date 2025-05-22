@@ -3,6 +3,7 @@ package io.flowminer.api.model;
 import io.flowminer.api.enums.WorkflowEnum;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.w3c.dom.Text;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -19,6 +20,7 @@ public class Workflow {
     private String userId;
     private String name;
     private String description;
+    @Column(columnDefinition = "TEXT")
     private String definition;
 
     @Enumerated(EnumType.STRING)

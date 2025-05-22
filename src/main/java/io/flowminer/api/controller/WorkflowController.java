@@ -2,6 +2,7 @@ package io.flowminer.api.controller;
 
 import io.flowminer.api.dto.CreateWorkflowRequestDTO;
 import io.flowminer.api.dto.DeleteWorkflowDTO;
+import io.flowminer.api.dto.UpdateWorkflowDTO;
 import io.flowminer.api.enums.WorkflowEnum;
 import io.flowminer.api.model.Workflow;
 import io.flowminer.api.repository.WorkflowRepository;
@@ -33,7 +34,7 @@ public class WorkflowController {
         Workflow workflow = new Workflow();
         workflow.setUserId(req.userId);
         workflow.setName(req.name);
-        workflow.setDefinition(req.description);
+        workflow.setDescription(req.description);
         workflow.setStatus(req.status);
         workflow.setDefinition(req.definition);
         workflow.setCreatedAt(LocalDateTime.now());
@@ -58,5 +59,17 @@ public class WorkflowController {
         if(workflow.isEmpty()) throw new RuntimeException("Workflow not found");
 
         return workflow.get();
+    }
+
+    @PostMapping("/update/{id}")
+    public Workflow updateWorkflow(@PathVariable String id, @RequestBody UpdateWorkflowDTO req) {
+        Optional<Workflow> workflowOpt = workflowRepository.findByIdAndUserId(UUID.fromString(id), req.userId);
+
+        if(workflowOpt.isEmpty()) throw new RuntimeException("Workflow not found or does not belong to the user");
+        Workflow workflow = workflowOpt.get();
+        if(workflow.getStatus() != WorkflowEnum.DRAFT) throw  new RuntimeException("Workflow is not a draft");
+        workflow.setDefinition(req.definition);
+        workflowRepository.save(workflow);
+        return workflow;
     }
 }
