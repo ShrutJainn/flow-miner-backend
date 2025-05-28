@@ -1,13 +1,13 @@
 package io.flowminer.api.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Getter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateWorkflowDTO {
-    public String userId;
-    public String definition;
+public class Output {
+    private String name;
+    private String type;
 }

@@ -1,18 +1,29 @@
 package io.flowminer.api.controller;
 
-import io.flowminer.api.dto.CreateWorkflowRequestDTO;
-import io.flowminer.api.dto.DeleteWorkflowDTO;
-import io.flowminer.api.dto.UpdateWorkflowDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.flowminer.api.dto.*;
+import io.flowminer.api.enums.ExecutionPhaseStatus;
 import io.flowminer.api.enums.WorkflowEnum;
+import io.flowminer.api.enums.WorkflowExecutionStatus;
+import io.flowminer.api.enums.WorkflowExecutionTrigger;
+import io.flowminer.api.model.ExecutionPhase;
 import io.flowminer.api.model.Workflow;
+import io.flowminer.api.model.WorkflowExecution;
+import io.flowminer.api.registry.TaskRegistry;
+import io.flowminer.api.repository.ExecutionPhaseRepository;
+import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
+import io.flowminer.api.service.FlowToExecutionPlanService;
 import io.flowminer.api.service.WorkflowService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import org.hibernate.jdbc.Work;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/workflow")
@@ -20,9 +31,15 @@ public class WorkflowController {
 
     public final WorkflowService workflowService;
     public final WorkflowRepository workflowRepository;
-    public WorkflowController(WorkflowService workflowService, WorkflowRepository workflowRepository) {
+    public final WorkflowExecutionRepository workflowExecutionRepository;
+    public final FlowToExecutionPlanService flowToExecutionPlanService;
+    public final ExecutionPhaseRepository executionPhaseRepository;
+    public WorkflowController(WorkflowService workflowService, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository) {
         this.workflowService = workflowService;
         this.workflowRepository = workflowRepository;
+        this.flowToExecutionPlanService  = flowToExecutionPlanService;
+        this.workflowExecutionRepository = workflowExecutionRepository;
+        this.executionPhaseRepository = executionPhaseRepository;
     }
 
     @GetMapping("/user")
@@ -71,5 +88,77 @@ public class WorkflowController {
         workflow.setDefinition(req.definition);
         workflowRepository.save(workflow);
         return workflow;
+    }
+
+    @PostMapping("/generate-plan")
+    public ResponseEntity<Map<String, Object>> generatePlan(@RequestBody GenerateWorkflowRequestDTO req) throws JsonProcessingException {
+        Optional<Workflow> workflowOpt = workflowRepository.findByIdAndUserId( UUID.fromString(req.workflowId) ,req.userId);
+        if(workflowOpt.isEmpty()) throw new RuntimeException("Workflow not found or doesn't belong to the specified user");
+        Workflow workflow = workflowOpt.get();
+
+        if(req.flowDefinition.isEmpty()) throw new RuntimeException("Flow definition is not defined");
+
+        ObjectMapper mapper = new ObjectMapper();
+        FlowDefinitionDTO flowDefinition = mapper.readValue(req.flowDefinition, FlowDefinitionDTO.class);
+        System.out.println("flow definition : " + req.flowDefinition);
+        List<AppNode> nodes = flowDefinition.getNodes();
+        List<Edge> edges = flowDefinition.getEdges();
+
+        FlowToExecutionPlanResponse response = flowToExecutionPlanService.generatePlan(nodes, edges);
+        WorkflowExecution workflowExecution = new WorkflowExecution();
+        workflowExecution.setWorkflowId(UUID.fromString(req.workflowId));
+        workflowExecution.setUserId(req.userId);
+        workflowExecution.setStatus(WorkflowExecutionStatus.PENDING);
+        workflowExecution.setTrigger(WorkflowExecutionTrigger.MANUAL);
+        workflowExecution.setCreatedAt(LocalDateTime.now());
+        workflowExecution.setStartedAt(LocalDateTime.now());
+
+        WorkflowExecution savedExecution = workflowExecutionRepository.save(workflowExecution);
+
+        List<ExecutionPhase> phases = new ArrayList<>();
+
+        for(WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+            for(AppNode node : phase.getNodes()) {
+                ExecutionPhase executionPhase = new ExecutionPhase();
+                executionPhase.setWorkflowExecutionId(savedExecution.getId());
+                executionPhase.setUserId(req.userId);
+                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
+                executionPhase.setNumber(phase.getPhase());
+                executionPhase.setNode(mapper.writeValueAsString(node));
+                executionPhase.setName(TaskRegistry.get(node.getData().getType()).getLabel());
+                phases.add(executionPhase);
+            }
+        }
+        executionPhaseRepository.saveAll(phases);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("workflowExecutionId", savedExecution.getId());
+        res.put("phasesCreated", phases.size());
+        return ResponseEntity.ok(res);
+    }
+
+    @GetMapping("/execution/{executionId}")
+    public ResponseEntity<WorkflowExecutionWithPhasesDTO> getWorkflowExecutionWithPhases(@PathVariable String executionId) {
+        WorkflowExecution workflowExecution = workflowExecutionRepository.findById(UUID.fromString(executionId)).orElseThrow(() -> new RuntimeException("Execution not found"));
+        List<ExecutionPhase> phases = executionPhaseRepository.findAllByWorkflowExecutionId(UUID.fromString(executionId));
+
+        phases.sort(Comparator.comparingInt(ExecutionPhase :: getNumber));
+        WorkflowExecutionWithPhasesDTO response = new WorkflowExecutionWithPhasesDTO(workflowExecution, phases);
+        return ResponseEntity.ok(response);
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class GenerateWorkflowRequestDTO {
+        public String workflowId;
+        public String userId;
+        public String flowDefinition;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class WorkflowExecutionWithPhasesDTO {
+        private WorkflowExecution workflowExecution;
+        private List<ExecutionPhase> phases;
     }
 }

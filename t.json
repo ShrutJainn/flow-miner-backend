@@ -1,30 +1,56 @@
 {
-  "nodes": [
+  "workflowExecution": {
+    "id": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a",
+    "workflowId": "c239c34e-3df9-4c17-8a96-fff3bfcb02c3",
+    "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
+    "trigger": "MANUAL",
+    "status": "PENDING",
+    "createdAt": "2025-05-28T22:07:07.36472",
+    "startedAt": "2025-05-28T22:07:07.36472",
+    "completedAt": null
+  },
+  "phases": [
     {
-      "id": "12bcea78-a01d-467c-9d1c-6c2206d5183f",
-      "type": "FlowMinerNode",
-      "dragHandle": ".drag-handle",
-      "data": {
-        "type": "LAUNCH_BROWSER",
-        "inputs": {
-          "Website Url": "sdfrgsdfg"
-        }
-      },
-      "position": {
-        "x": 0,
-        "y": 0
-      },
-      "measured": {
-        "width": 420,
-        "height": 175
-      },
-      "selected": true
+      "id": "bb9c546e-0650-489f-a180-2743e9347652",
+      "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
+      "status": "CREATED",
+      "number": 0,
+      "node": "{\"id\":\"4be983ba-d249-4198-8976-c78c7836392b\",\"type\":\"FlowMinerNode\",\"inputs\":null,\"data\":{\"type\":\"LAUNCH_BROWSER\",\"inputs\":{\"Website Url\":\"test\"}}}",
+      "name": "Launch Browser",
+      "startedAt": null,
+      "completedAt": null,
+      "inputs": null,
+      "outputs": null,
+      "creditsCost": 0,
+      "workflowExecutionId": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a"
+    },
+    {
+      "id": "22d1f9a3-c2cb-423e-b1e1-a7641f4a0e2e",
+      "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
+      "status": "CREATED",
+      "number": 1,
+      "node": "{\"id\":\"3312fc38-62a8-4501-a97d-574ee7e365bf\",\"type\":\"FlowMinerNode\",\"inputs\":null,\"data\":{\"type\":\"PAGE_TO_HTML\",\"inputs\":{\"Web page\":\"\"}}}",
+      "name": "Page to HTML",
+      "startedAt": null,
+      "completedAt": null,
+      "inputs": null,
+      "outputs": null,
+      "creditsCost": 0,
+      "workflowExecutionId": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a"
+    },
+    {
+      "id": "ca26126d-6dba-4f8e-bec5-65803f52afe7",
+      "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
+      "status": "CREATED",
+      "number": 2,
+      "node": "{\"id\":\"e3cb109a-e859-4443-88d7-a09940e05c43\",\"type\":\"FlowMinerNode\",\"inputs\":null,\"data\":{\"type\":\"EXTRACT_TEXT_FROM_ELEMENT\",\"inputs\":{\"Html\":\"\",\"Selector\":\"Test\"}}}",
+      "name": "Extract Text From Element",
+      "startedAt": null,
+      "completedAt": null,
+      "inputs": null,
+      "outputs": null,
+      "creditsCost": 0,
+      "workflowExecutionId": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a"
     }
-  ],
-  "edges": [],
-  "viewport": {
-    "x": 178,
-    "y": 80.70833333333334,
-    "zoom": 0.8547619047619047
-  }
+  ]
 }

@@ -1,13 +1,15 @@
 package io.flowminer.api.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Getter
+import java.util.List;
+
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateWorkflowDTO {
-    public String userId;
-    public String definition;
+public class MissingInput {
+    public String nodeId;
+    public List<String> inputs;
 }
