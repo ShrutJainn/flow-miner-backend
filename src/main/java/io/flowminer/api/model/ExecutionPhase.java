@@ -16,6 +16,7 @@ public class ExecutionPhase {
     private UUID id;
 
     private String userId;
+    @Enumerated(EnumType.ORDINAL)
     private ExecutionPhaseStatus status; //status of each individual task
     private int number; //number of phases
 

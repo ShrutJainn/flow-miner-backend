@@ -147,6 +147,7 @@ public class WorkflowController {
         return ResponseEntity.ok(response);
     }
 
+
     @Data
     @AllArgsConstructor
     public static class GenerateWorkflowRequestDTO {

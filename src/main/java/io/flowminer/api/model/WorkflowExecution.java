@@ -20,7 +20,9 @@ public class WorkflowExecution {
     private UUID workflowId;
 
     private String userId;
+    @Enumerated(EnumType.ORDINAL)
     private WorkflowExecutionTrigger trigger;
+    @Enumerated(EnumType.ORDINAL)
     private WorkflowExecutionStatus status;
 
     @Column(name = "created_at", nullable = false)
