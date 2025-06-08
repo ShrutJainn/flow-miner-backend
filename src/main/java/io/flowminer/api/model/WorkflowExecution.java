@@ -20,10 +20,13 @@ public class WorkflowExecution {
     private UUID workflowId;
 
     private String userId;
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
     private WorkflowExecutionTrigger trigger;
-    @Enumerated(EnumType.ORDINAL)
+    @Enumerated(EnumType.STRING)
     private WorkflowExecutionStatus status;
+
+    @Column(name = "credits_consumed")
+    private int creditsConsumed = 0;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

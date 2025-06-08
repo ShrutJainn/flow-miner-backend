@@ -11,4 +11,6 @@ public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
     public List<Workflow> findByUserIdOrderByCreatedAtAsc(String userId);
 
     public Optional<Workflow> findByIdAndUserId(UUID id, String userId);
+
+    public Workflow findByIdAndLastRunId(UUID id, String lastRunId);
 }

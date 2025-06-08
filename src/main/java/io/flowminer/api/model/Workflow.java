@@ -1,6 +1,7 @@
 package io.flowminer.api.model;
 
 import io.flowminer.api.enums.WorkflowEnum;
+import io.flowminer.api.enums.WorkflowExecutionStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.w3c.dom.Text;
@@ -31,4 +32,10 @@ public class Workflow {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    private LocalDateTime lastRunAt;
+    private String lastRunId;
+
+    @Enumerated(EnumType.STRING)
+    private WorkflowExecutionStatus lastRunStatus;
 }
