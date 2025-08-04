@@ -1,56 +1,101 @@
-{
-  "workflowExecution": {
-    "id": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a",
-    "workflowId": "c239c34e-3df9-4c17-8a96-fff3bfcb02c3",
-    "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
-    "trigger": "MANUAL",
-    "status": "PENDING",
-    "createdAt": "2025-05-28T22:07:07.36472",
-    "startedAt": "2025-05-28T22:07:07.36472",
-    "completedAt": null
+[
+  {
+    "phase": 1,
+    "nodes": [
+      {
+        "id": "94ea3100-0c50-4952-9d15-090395531a2c",
+        "type": "FlowMinerNode",
+        "dragHandle": ".drag-handle",
+        "data": {
+          "type": "LAUNCH_BROWSER",
+          "inputs": {
+            "Website Url": "https://google.com"
+          }
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "measured": {
+          "width": 420,
+          "height": 265
+        },
+        "selected": false
+      }
+    ]
   },
-  "phases": [
-    {
-      "id": "bb9c546e-0650-489f-a180-2743e9347652",
-      "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
-      "status": "CREATED",
-      "number": 0,
-      "node": "{\"id\":\"4be983ba-d249-4198-8976-c78c7836392b\",\"type\":\"FlowMinerNode\",\"inputs\":null,\"data\":{\"type\":\"LAUNCH_BROWSER\",\"inputs\":{\"Website Url\":\"test\"}}}",
-      "name": "Launch Browser",
-      "startedAt": null,
-      "completedAt": null,
-      "inputs": null,
-      "outputs": null,
-      "creditsCost": 0,
-      "workflowExecutionId": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a"
-    },
-    {
-      "id": "22d1f9a3-c2cb-423e-b1e1-a7641f4a0e2e",
-      "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
-      "status": "CREATED",
-      "number": 1,
-      "node": "{\"id\":\"3312fc38-62a8-4501-a97d-574ee7e365bf\",\"type\":\"FlowMinerNode\",\"inputs\":null,\"data\":{\"type\":\"PAGE_TO_HTML\",\"inputs\":{\"Web page\":\"\"}}}",
-      "name": "Page to HTML",
-      "startedAt": null,
-      "completedAt": null,
-      "inputs": null,
-      "outputs": null,
-      "creditsCost": 0,
-      "workflowExecutionId": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a"
-    },
-    {
-      "id": "ca26126d-6dba-4f8e-bec5-65803f52afe7",
-      "userId": "user_2wrlu1NLlljjpq7IEx6LWFUaCK8",
-      "status": "CREATED",
-      "number": 2,
-      "node": "{\"id\":\"e3cb109a-e859-4443-88d7-a09940e05c43\",\"type\":\"FlowMinerNode\",\"inputs\":null,\"data\":{\"type\":\"EXTRACT_TEXT_FROM_ELEMENT\",\"inputs\":{\"Html\":\"\",\"Selector\":\"Test\"}}}",
-      "name": "Extract Text From Element",
-      "startedAt": null,
-      "completedAt": null,
-      "inputs": null,
-      "outputs": null,
-      "creditsCost": 0,
-      "workflowExecutionId": "cc3c2ad8-f4a5-4e2c-a0b9-93d089b1e54a"
-    }
-  ]
-}
+  {
+    "phase": 2,
+    "nodes": [
+      {
+        "id": "da854fce-3485-41d6-9ade-9b274a2b56b8",
+        "type": "FlowMinerNode",
+        "dragHandle": ".drag-handle",
+        "data": {
+          "type": "PAGE_TO_HTML",
+          "inputs": {
+            "Web page": ""
+          }
+        },
+        "position": {
+          "x": 675,
+          "y": 165
+        },
+        "measured": {
+          "width": 420,
+          "height": 218
+        },
+        "selected": false,
+        "dragging": false
+      },
+      {
+        "id": "428737e9-4c93-4179-9b7f-2e89ae863032",
+        "type": "FlowMinerNode",
+        "dragHandle": ".drag-handle",
+        "data": {
+          "type": "PAGE_TO_HTML",
+          "inputs": {
+            "Web page": ""
+          }
+        },
+        "position": {
+          "x": 675,
+          "y": 555
+        },
+        "measured": {
+          "width": 420,
+          "height": 218
+        },
+        "selected": true,
+        "dragging": false
+      }
+    ]
+  },
+  {
+    "phase": 3,
+    "nodes": [
+      {
+        "id": "03f72b0d-1124-493f-9a76-6347c8a90e13",
+        "type": "FlowMinerNode",
+        "dragHandle": ".drag-handle",
+        "data": {
+          "type": "EXTRACT_TEXT_FROM_ELEMENT",
+          "inputs": {
+            "Html": "",
+            "Selector": ""
+          }
+        },
+        "position": {
+          "x": 1380,
+          "y": 210
+        },
+        "measured": {
+          "width": 420,
+          "height": 406
+        },
+        "selected": false,
+        "dragging": false
+      }
+    ]
+  }
+]

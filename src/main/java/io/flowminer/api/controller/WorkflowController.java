@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workflow")
@@ -34,12 +35,14 @@ public class WorkflowController {
     public final WorkflowExecutionRepository workflowExecutionRepository;
     public final FlowToExecutionPlanService flowToExecutionPlanService;
     public final ExecutionPhaseRepository executionPhaseRepository;
-    public WorkflowController(WorkflowService workflowService, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository) {
+    public final ObjectMapper objectMapper;
+    public WorkflowController(WorkflowService workflowService, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ObjectMapper objectMapper) {
         this.workflowService = workflowService;
         this.workflowRepository = workflowRepository;
         this.flowToExecutionPlanService  = flowToExecutionPlanService;
         this.workflowExecutionRepository = workflowExecutionRepository;
         this.executionPhaseRepository = executionPhaseRepository;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/user")
@@ -100,11 +103,21 @@ public class WorkflowController {
 
         ObjectMapper mapper = new ObjectMapper();
         FlowDefinitionDTO flowDefinition = mapper.readValue(req.flowDefinition, FlowDefinitionDTO.class);
-        System.out.println("flow definition : " + req.flowDefinition);
         List<AppNode> nodes = flowDefinition.getNodes();
         List<Edge> edges = flowDefinition.getEdges();
 
         FlowToExecutionPlanResponse response = flowToExecutionPlanService.generatePlan(nodes, edges);
+
+        Environment environment = new Environment();
+        for(WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+            for(AppNode node : phase.getNodes()) {
+                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(),node.getData().getInputs(), node.getData().getOutputs()));
+            }
+        }
+        String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(environment);
+        String plan = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response.getExecutionPlan());
+        System.out.println("Environment generated : " + json);
+        System.out.println("Execution plan : " + plan);
         WorkflowExecution workflowExecution = new WorkflowExecution();
         workflowExecution.setWorkflowId(UUID.fromString(req.workflowId));
         workflowExecution.setUserId(req.userId);
@@ -124,8 +137,21 @@ public class WorkflowController {
                 executionPhase.setUserId(req.userId);
                 executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
                 executionPhase.setNumber(phase.getPhase());
+
+                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
+
+                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
+                        ? nodeCopy.getInputs().entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
+                        ))
+                        : new HashMap<>();
+
+
+                nodeCopy.setInputs(cleanedInputs);
                 executionPhase.setNode(mapper.writeValueAsString(node));
-                executionPhase.setName(TaskRegistry.get(node.getData().getType()).getLabel());
+                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
                 phases.add(executionPhase);
             }
         }

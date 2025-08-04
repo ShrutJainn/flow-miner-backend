@@ -19,7 +19,7 @@ public class FlowToExecutionPlanService {
 
         // 1. Find entry point
         List<AppNode> entryPoints = nodes.stream()
-                .filter(node -> Optional.ofNullable(TaskRegistry.get(node.getData().getType()))
+                .filter(node -> Optional.ofNullable(TaskRegistry.get(node.getData().getType().toString()))
                         .map(TaskDefinition::isEntryPoint)
                         .orElse(false))
                 .toList();
@@ -54,17 +54,45 @@ public class FlowToExecutionPlanService {
             }
 
             for (AppNode node : executableNodes) {
+                List<Edge> incomingEdges = edges.stream()
+                        .filter(edge -> edge.getTarget().equals(node.getId()))
+                        .filter(edge -> planned.contains(edge.getSource()))
+                        .toList();
+
+                TaskDefinition task = TaskRegistry.get(node.getData().getType().toString());
+                if (task != null && task.getInputs() != null) {
+                    for (Input input : task.getInputs()) {
+                        String inputName = input.getName();
+
+                        // If input is already set, skip
+                        if (node.getData().getInputs() != null &&
+                                node.getData().getInputs().containsKey(inputName) &&
+                                !node.getData().getInputs().get(inputName).isBlank()) {
+                            continue;
+                        }
+
+                        // Find matching edge for the input
+                        Optional<Edge> matchingEdge = incomingEdges.stream()
+                                .filter(edge -> edge.getTargetHandle().equals(inputName))
+                                .findFirst();
+
+                        matchingEdge.ifPresent(edge -> {
+                            node.getData().getInputs().put(inputName, "$ref:" + edge.getSource());
+                        });
+                    }
+                }
                 planned.add(node.getId());
             }
 
             phases.add(new WorkflowExecutionPlanPhase(phases.size(), executableNodes));
         }
 
+        System.out.println("Execution plan from backend : " + phases);
         return new FlowToExecutionPlanResponse(new WorkflowExecutionPlan(phases), null);
     }
 
     private List<String> getInvalidInputs(AppNode node, List<Edge> edges, Set<String> planned) {
-        TaskDefinition task = TaskRegistry.get(node.getData().getType());
+        TaskDefinition task = TaskRegistry.get(node.getData().getType().toString());
         if (task == null) return List.of();
 
         Set<String> incomingHandles = edges.stream()

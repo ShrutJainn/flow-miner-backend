@@ -1,7 +1,9 @@
 package io.flowminer.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.flowminer.api.dto.Environment;
 import io.flowminer.api.dto.ExecutePhaseResponseDTO;
+import io.flowminer.api.dto.ScreenshotResponse;
 import io.flowminer.api.enums.ExecutionPhaseStatus;
 import io.flowminer.api.enums.WorkflowExecutionStatus;
 import io.flowminer.api.model.ExecutionPhase;
@@ -11,9 +13,12 @@ import io.flowminer.api.repository.ExecutionPhaseRepository;
 import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -22,11 +27,13 @@ public class WorkflowExecutionService {
     public final WorkflowRepository workflowRepository;
     public final ExecutionPhaseRepository executionPhaseRepository;
     public final ExecutionPhaseService executionPhaseService;
-    WorkflowExecutionService(WorkflowExecutionRepository workflowExecutionRepository, WorkflowRepository workflowRepository, ExecutionPhaseRepository executionPhaseRepository, ExecutionPhaseService executionPhaseService) {
+    public final RestTemplate restTemplate;
+    WorkflowExecutionService(WorkflowExecutionRepository workflowExecutionRepository, WorkflowRepository workflowRepository, ExecutionPhaseRepository executionPhaseRepository, ExecutionPhaseService executionPhaseService, RestTemplate restTemplate) {
         this.workflowExecutionRepository = workflowExecutionRepository;
         this.workflowRepository = workflowRepository;
         this.executionPhaseRepository = executionPhaseRepository;
         this.executionPhaseService = executionPhaseService;
+        this.restTemplate = restTemplate;
     }
 
     public void executeWorkflow(UUID executionId) throws JsonProcessingException {
@@ -36,17 +43,21 @@ public class WorkflowExecutionService {
 
         int creditsConsumed = 0;
         boolean executionFailed = false;
-
+        Environment environment = new Environment();
         //TODO : Execute the phases and consume credits
         for(ExecutionPhase phase : phases) {
-            ExecutePhaseResponseDTO response = executionPhaseService.executeWorkflowPhase(phase);
+            ExecutePhaseResponseDTO response = executionPhaseService.executeWorkflowPhase(phase, environment);
             if(!response.isSuccess()) {
                 executionFailed = true;
                 break;
             }
         }
-
+        String nodeUrl = System.getenv("NODE_PUP_URL") + "/launch";
+        Map<String, Object> req = new HashMap<>();
+        req.put("environment", environment);
+        ScreenshotResponse response = restTemplate.postForObject(nodeUrl, req, ScreenshotResponse.class);
         finalizeWorkflow(execution, creditsConsumed, executionFailed);
+        System.out.println("Environment inside executeWorkflow : " + environment);
     }
     private WorkflowExecution initializeWorkflow(UUID executionId) {
         WorkflowExecution execution = workflowExecutionRepository.findById(executionId).orElseThrow(() -> new RuntimeException("Workflow not found"));

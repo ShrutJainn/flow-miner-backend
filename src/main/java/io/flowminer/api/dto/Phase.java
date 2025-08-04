@@ -1,18 +1,22 @@
 package io.flowminer.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.flowminer.api.enums.EnvironmentPhaseType;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class NodeData {
+@AllArgsConstructor
+@NoArgsConstructor
+public class Phase {
     @Enumerated(EnumType.STRING)
     private EnvironmentPhaseType type;
-    private Map<String, String> inputs;
-    private Map<String, String> outputs;
+    Map<String, String> inputs = new HashMap<>();
+    Map<String, String> outputs = new HashMap<>();
 }
+

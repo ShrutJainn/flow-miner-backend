@@ -20,7 +20,9 @@ public class ExecutionPhase {
     private ExecutionPhaseStatus status; //status of each individual task
     private int number; //number of phases
 
+    @Column(columnDefinition = "TEXT")
     private String node;
+
     private String name;
 
     @Column(name = "started_at")

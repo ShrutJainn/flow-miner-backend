@@ -12,7 +12,7 @@ import java.util.Map;
 public class AppNode {
     public String id;
     public String type;
-    public Map<String, String> inputs;
+    public Map<String, Object> inputs;
     public NodeData data;
 }
 
