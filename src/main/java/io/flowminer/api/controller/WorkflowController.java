@@ -7,20 +7,24 @@ import io.flowminer.api.enums.ExecutionPhaseStatus;
 import io.flowminer.api.enums.WorkflowEnum;
 import io.flowminer.api.enums.WorkflowExecutionStatus;
 import io.flowminer.api.enums.WorkflowExecutionTrigger;
+import io.flowminer.api.model.EnvironmentModel;
 import io.flowminer.api.model.ExecutionPhase;
 import io.flowminer.api.model.Workflow;
 import io.flowminer.api.model.WorkflowExecution;
 import io.flowminer.api.registry.TaskRegistry;
+import io.flowminer.api.repository.EnvironmentRepository;
 import io.flowminer.api.repository.ExecutionPhaseRepository;
 import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
 import io.flowminer.api.service.FlowToExecutionPlanService;
+import io.flowminer.api.service.RedisService;
 import io.flowminer.api.service.WorkflowService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.hibernate.jdbc.Work;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -36,19 +40,27 @@ public class WorkflowController {
     public final FlowToExecutionPlanService flowToExecutionPlanService;
     public final ExecutionPhaseRepository executionPhaseRepository;
     public final ObjectMapper objectMapper;
-    public WorkflowController(WorkflowService workflowService, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ObjectMapper objectMapper) {
+    public final EnvironmentRepository environmentRepository;
+    public final RestTemplate restTemplate;
+    public final RedisService redisService;
+
+    public WorkflowController(WorkflowService workflowService, RedisService redisService, RestTemplate restTemplate, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ObjectMapper objectMapper, EnvironmentRepository environmentRepository) {
         this.workflowService = workflowService;
         this.workflowRepository = workflowRepository;
-        this.flowToExecutionPlanService  = flowToExecutionPlanService;
+        this.flowToExecutionPlanService = flowToExecutionPlanService;
         this.workflowExecutionRepository = workflowExecutionRepository;
         this.executionPhaseRepository = executionPhaseRepository;
+        this.redisService = redisService;
         this.objectMapper = objectMapper;
+        this.environmentRepository = environmentRepository;
+        this.restTemplate = restTemplate;
     }
 
     @GetMapping("/user")
     public List<Workflow> getWorkflowsForUser(@RequestParam String userId) {
         return workflowService.getWorkflowsByUser(userId);
     }
+
     @PostMapping("/create")
     public Workflow createWorkflow(@RequestBody CreateWorkflowRequestDTO req) {
         Workflow workflow = new Workflow();
@@ -68,7 +80,7 @@ public class WorkflowController {
     public void deleteWorkflow(@RequestParam String id, @RequestParam String userId) {
         Optional<Workflow> workflow = workflowRepository.findByIdAndUserId(UUID.fromString(id), userId);
 
-        if(workflow.isEmpty()) throw new RuntimeException("Workflow not found or doesn't belong to the user");
+        if (workflow.isEmpty()) throw new RuntimeException("Workflow not found or doesn't belong to the user");
 
         workflowRepository.delete(workflow.get());
     }
@@ -76,7 +88,7 @@ public class WorkflowController {
     @GetMapping("/{workflowId}")
     public Workflow getWorkflowById(@PathVariable String workflowId) {
         Optional<Workflow> workflow = workflowRepository.findById(UUID.fromString(workflowId));
-        if(workflow.isEmpty()) throw new RuntimeException("Workflow not found");
+        if (workflow.isEmpty()) throw new RuntimeException("Workflow not found");
 
         return workflow.get();
     }
@@ -85,9 +97,9 @@ public class WorkflowController {
     public Workflow updateWorkflow(@PathVariable String id, @RequestBody UpdateWorkflowDTO req) {
         Optional<Workflow> workflowOpt = workflowRepository.findByIdAndUserId(UUID.fromString(id), req.userId);
 
-        if(workflowOpt.isEmpty()) throw new RuntimeException("Workflow not found or does not belong to the user");
+        if (workflowOpt.isEmpty()) throw new RuntimeException("Workflow not found or does not belong to the user");
         Workflow workflow = workflowOpt.get();
-        if(workflow.getStatus() != WorkflowEnum.DRAFT) throw  new RuntimeException("Workflow is not a draft");
+        if (workflow.getStatus() != WorkflowEnum.DRAFT) throw new RuntimeException("Workflow is not a draft");
         workflow.setDefinition(req.definition);
         workflowRepository.save(workflow);
         return workflow;
@@ -95,11 +107,12 @@ public class WorkflowController {
 
     @PostMapping("/generate-plan")
     public ResponseEntity<Map<String, Object>> generatePlan(@RequestBody GenerateWorkflowRequestDTO req) throws JsonProcessingException {
-        Optional<Workflow> workflowOpt = workflowRepository.findByIdAndUserId( UUID.fromString(req.workflowId) ,req.userId);
-        if(workflowOpt.isEmpty()) throw new RuntimeException("Workflow not found or doesn't belong to the specified user");
+        Optional<Workflow> workflowOpt = workflowRepository.findByIdAndUserId(UUID.fromString(req.workflowId), req.userId);
+        if (workflowOpt.isEmpty())
+            throw new RuntimeException("Workflow not found or doesn't belong to the specified user");
         Workflow workflow = workflowOpt.get();
 
-        if(req.flowDefinition.isEmpty()) throw new RuntimeException("Flow definition is not defined");
+        if (req.flowDefinition.isEmpty()) throw new RuntimeException("Flow definition is not defined");
 
         ObjectMapper mapper = new ObjectMapper();
         FlowDefinitionDTO flowDefinition = mapper.readValue(req.flowDefinition, FlowDefinitionDTO.class);
@@ -109,15 +122,46 @@ public class WorkflowController {
         FlowToExecutionPlanResponse response = flowToExecutionPlanService.generatePlan(nodes, edges);
 
         Environment environment = new Environment();
-        for(WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
-            for(AppNode node : phase.getNodes()) {
-                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(),node.getData().getInputs(), node.getData().getOutputs()));
+        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+            for (AppNode node : phase.getNodes()) {
+                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(), node.getData().getInputs(), node.getData().getOutputs()));
             }
         }
         String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(environment);
         String plan = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response.getExecutionPlan());
         System.out.println("Environment generated : " + json);
         System.out.println("Execution plan : " + plan);
+
+        //save in environment table
+
+
+//        Optional<EnvironmentModel> existingEnvironment = environmentRepository.findByWorkflowId(workflow.getId());
+//        UUID environmentId;
+//        if (existingEnvironment.isPresent()) {
+//            //update the existing entry
+//            EnvironmentModel environmentModel = existingEnvironment.get();
+//            environmentId = environmentModel.getId();
+//            environmentModel.setEnvironment(objectMapper.writeValueAsString(environment));
+//            environmentRepository.save(environmentModel);
+//        } else {
+//            //make a new entry
+//            EnvironmentModel environmentModel = new EnvironmentModel();
+//            environmentModel.setEnvironment(objectMapper.writeValueAsString(environment));
+//            environmentModel.setWorkflowId(workflow.getId());
+//            environmentRepository.save(environmentModel);
+//            environmentId = environmentModel.getId();
+//        }
+
+        String redisKey = "env:" + workflow.getId();
+        redisService.saveEnvironmentOnRedis(redisKey, environment);
+
+        String nodeUrl = System.getenv("NODE_PUP_URL") + "/execute/" + workflow.getId().toString();
+
+
+
+        Environment environmentFromNodeServer = restTemplate.postForObject(nodeUrl, null, Environment.class);
+
+
         WorkflowExecution workflowExecution = new WorkflowExecution();
         workflowExecution.setWorkflowId(UUID.fromString(req.workflowId));
         workflowExecution.setUserId(req.userId);
@@ -130,8 +174,8 @@ public class WorkflowController {
 
         List<ExecutionPhase> phases = new ArrayList<>();
 
-        for(WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
-            for(AppNode node : phase.getNodes()) {
+        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+            for (AppNode node : phase.getNodes()) {
                 ExecutionPhase executionPhase = new ExecutionPhase();
                 executionPhase.setWorkflowExecutionId(savedExecution.getId());
                 executionPhase.setUserId(req.userId);
@@ -168,7 +212,7 @@ public class WorkflowController {
         WorkflowExecution workflowExecution = workflowExecutionRepository.findById(UUID.fromString(executionId)).orElseThrow(() -> new RuntimeException("Execution not found"));
         List<ExecutionPhase> phases = executionPhaseRepository.findAllByWorkflowExecutionId(UUID.fromString(executionId));
 
-        phases.sort(Comparator.comparingInt(ExecutionPhase :: getNumber));
+        phases.sort(Comparator.comparingInt(ExecutionPhase::getNumber));
         WorkflowExecutionWithPhasesDTO response = new WorkflowExecutionWithPhasesDTO(workflowExecution, phases);
         return ResponseEntity.ok(response);
     }

@@ -52,10 +52,6 @@ public class WorkflowExecutionService {
                 break;
             }
         }
-        String nodeUrl = System.getenv("NODE_PUP_URL") + "/launch";
-        Map<String, Object> req = new HashMap<>();
-        req.put("environment", environment);
-        ScreenshotResponse response = restTemplate.postForObject(nodeUrl, req, ScreenshotResponse.class);
         finalizeWorkflow(execution, creditsConsumed, executionFailed);
         System.out.println("Environment inside executeWorkflow : " + environment);
     }
