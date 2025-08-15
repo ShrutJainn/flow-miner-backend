@@ -4,6 +4,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Objects;
 
 @Service
 public class RedisService {
@@ -17,7 +18,7 @@ public class RedisService {
         redisTemplate.opsForValue().set(key, environment, Duration.ofMinutes(30));
     }
 
-    public Object getEnvironment(String key) {
-        return redisTemplate.opsForValue().get(key);
+    public String getEnvironment(String key) {
+        return Objects.requireNonNull(redisTemplate.opsForValue().get(key)).toString();
     }
 }

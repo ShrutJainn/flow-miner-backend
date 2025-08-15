@@ -21,6 +21,7 @@ import io.flowminer.api.service.RedisService;
 import io.flowminer.api.service.WorkflowService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.coyote.Response;
 import org.hibernate.jdbc.Work;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -132,34 +133,39 @@ public class WorkflowController {
         System.out.println("Environment generated : " + json);
         System.out.println("Execution plan : " + plan);
 
-        //save in environment table
+        ObjectMapper cleanMapper = objectMapper.copy();
+        cleanMapper.deactivateDefaultTyping();
 
-
-//        Optional<EnvironmentModel> existingEnvironment = environmentRepository.findByWorkflowId(workflow.getId());
-//        UUID environmentId;
-//        if (existingEnvironment.isPresent()) {
-//            //update the existing entry
-//            EnvironmentModel environmentModel = existingEnvironment.get();
-//            environmentId = environmentModel.getId();
-//            environmentModel.setEnvironment(objectMapper.writeValueAsString(environment));
-//            environmentRepository.save(environmentModel);
-//        } else {
-//            //make a new entry
-//            EnvironmentModel environmentModel = new EnvironmentModel();
-//            environmentModel.setEnvironment(objectMapper.writeValueAsString(environment));
-//            environmentModel.setWorkflowId(workflow.getId());
-//            environmentRepository.save(environmentModel);
-//            environmentId = environmentModel.getId();
-//        }
 
         String redisKey = "env:" + workflow.getId();
-        redisService.saveEnvironmentOnRedis(redisKey, environment);
+        redisService.saveEnvironmentOnRedis(redisKey, cleanMapper.writerWithDefaultPrettyPrinter().writeValueAsString(environment));
 
         String nodeUrl = System.getenv("NODE_PUP_URL") + "/execute/" + workflow.getId().toString();
 
 
+        try{
+            ResponseEntity<Map> environmentFromNodeServer = restTemplate.postForEntity(nodeUrl, null, Map.class);
 
-        Environment environmentFromNodeServer = restTemplate.postForObject(nodeUrl, null, Environment.class);
+            if(environmentFromNodeServer.getStatusCode().is2xxSuccessful()) {
+                Boolean success = (Boolean) environmentFromNodeServer.getBody().get("success");
+
+                if(Boolean.TRUE.equals(success)) {
+                    String updatedEnv = redisService.getEnvironment(redisKey);
+
+                    Map<String,Object> envMap = new ObjectMapper().readValue(updatedEnv, Map.class);
+                    System.out.println("updated environment from redis : " + envMap);
+
+                } else {
+                    System.err.println("Node server error : " + environmentFromNodeServer.getBody().get("error"));
+                }
+            } else {
+                System.err.println("Node server returned status : " + environmentFromNodeServer.getStatusCode());
+            }
+
+        } catch(Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
 
 
         WorkflowExecution workflowExecution = new WorkflowExecution();
