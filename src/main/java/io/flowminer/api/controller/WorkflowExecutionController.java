@@ -1,6 +1,7 @@
 package io.flowminer.api.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.flowminer.api.dto.GenerateWorkflowRequestDTO;
 import io.flowminer.api.enums.ExecutionPhaseStatus;
 import io.flowminer.api.enums.WorkflowExecutionStatus;
 import io.flowminer.api.model.ExecutionPhase;
@@ -12,10 +13,7 @@ import io.flowminer.api.repository.WorkflowRepository;
 import io.flowminer.api.service.WorkflowExecutionService;
 import org.springframework.cglib.core.Local;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,8 +34,8 @@ public class WorkflowExecutionController {
         this.executionPhaseRepository = executionPhaseRepository;
         this.workflowExecutionService = workflowExecutionService;
     }
-    @PostMapping("/execute/{executionId}")
-    public ResponseEntity<String> executeWorkflow(@PathVariable String executionId) throws JsonProcessingException {
+    @PostMapping("/execute")
+    public ResponseEntity<String> executeWorkflow(@RequestBody GenerateWorkflowRequestDTO req) throws JsonProcessingException {
 //        WorkflowExecution execution = workflowExecutionRepository.findById(UUID.fromString(executionId)).orElseThrow(() -> new RuntimeException("Workflow not found"));
 //        Workflow workflow = workflowRepository.findById(execution.getWorkflowId()).orElseThrow(() -> new RuntimeException("Workflow not found"));
 //
@@ -76,7 +74,7 @@ public class WorkflowExecutionController {
 //        workflowRepository.save(workflowAfterExecution);
 
 
-        workflowExecutionService.executeWorkflow(UUID.fromString(executionId));
-        return ResponseEntity.ok("Executed");
+        String workflowExecutionId = workflowExecutionService.executeWorkflow(req.getWorkflowId(), req.getUserId(), req.getFlowDefinition());
+        return ResponseEntity.ok(workflowExecutionId);
     }
 }

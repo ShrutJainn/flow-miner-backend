@@ -128,10 +128,6 @@ public class WorkflowController {
                 environment.getPhases().put(node.getId(), new Phase(node.getData().getType(), node.getData().getInputs(), node.getData().getOutputs()));
             }
         }
-        String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(environment);
-        String plan = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response.getExecutionPlan());
-        System.out.println("Environment generated : " + json);
-        System.out.println("Execution plan : " + plan);
 
         ObjectMapper cleanMapper = objectMapper.copy();
         cleanMapper.deactivateDefaultTyping();
@@ -168,49 +164,51 @@ public class WorkflowController {
         }
 
 
-        WorkflowExecution workflowExecution = new WorkflowExecution();
-        workflowExecution.setWorkflowId(UUID.fromString(req.workflowId));
-        workflowExecution.setUserId(req.userId);
-        workflowExecution.setStatus(WorkflowExecutionStatus.PENDING);
-        workflowExecution.setTrigger(WorkflowExecutionTrigger.MANUAL);
-        workflowExecution.setCreatedAt(LocalDateTime.now());
-        workflowExecution.setStartedAt(LocalDateTime.now());
+//        WorkflowExecution workflowExecution = new WorkflowExecution();
+//        workflowExecution.setWorkflowId(UUID.fromString(req.workflowId));
+//        workflowExecution.setUserId(req.userId);
+//        workflowExecution.setStatus(WorkflowExecutionStatus.PENDING);
+//        workflowExecution.setTrigger(WorkflowExecutionTrigger.MANUAL);
+//        workflowExecution.setCreatedAt(LocalDateTime.now());
+//        workflowExecution.setStartedAt(LocalDateTime.now());
+//
+//        WorkflowExecution savedExecution = workflowExecutionRepository.save(workflowExecution);
+//
+//        List<ExecutionPhase> phases = new ArrayList<>();
+//
+//        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+//            for (AppNode node : phase.getNodes()) {
+//                ExecutionPhase executionPhase = new ExecutionPhase();
+//                executionPhase.setWorkflowExecutionId(savedExecution.getId());
+//                executionPhase.setUserId(req.userId);
+//                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
+//                executionPhase.setNumber(phase.getPhase());
+//
+//                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
+//
+//                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
+//                        ? nodeCopy.getInputs().entrySet().stream()
+//                        .collect(Collectors.toMap(
+//                                Map.Entry::getKey,
+//                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
+//                        ))
+//                        : new HashMap<>();
+//
+//
+//                nodeCopy.setInputs(cleanedInputs);
+//                executionPhase.setNode(mapper.writeValueAsString(node));
+//                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
+//                phases.add(executionPhase);
+//            }
+//        }
+//        executionPhaseRepository.saveAll(phases);
+//
+//        Map<String, Object> res = new HashMap<>();
+//        res.put("workflowExecutionId", savedExecution.getId());
+//        res.put("phasesCreated", phases.size());
+//        return ResponseEntity.ok(res);
 
-        WorkflowExecution savedExecution = workflowExecutionRepository.save(workflowExecution);
-
-        List<ExecutionPhase> phases = new ArrayList<>();
-
-        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
-            for (AppNode node : phase.getNodes()) {
-                ExecutionPhase executionPhase = new ExecutionPhase();
-                executionPhase.setWorkflowExecutionId(savedExecution.getId());
-                executionPhase.setUserId(req.userId);
-                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
-                executionPhase.setNumber(phase.getPhase());
-
-                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
-
-                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
-                        ? nodeCopy.getInputs().entrySet().stream()
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
-                        ))
-                        : new HashMap<>();
-
-
-                nodeCopy.setInputs(cleanedInputs);
-                executionPhase.setNode(mapper.writeValueAsString(node));
-                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
-                phases.add(executionPhase);
-            }
-        }
-        executionPhaseRepository.saveAll(phases);
-
-        Map<String, Object> res = new HashMap<>();
-        res.put("workflowExecutionId", savedExecution.getId());
-        res.put("phasesCreated", phases.size());
-        return ResponseEntity.ok(res);
+        return null;
     }
 
     @GetMapping("/execution/{executionId}")
@@ -221,15 +219,6 @@ public class WorkflowController {
         phases.sort(Comparator.comparingInt(ExecutionPhase::getNumber));
         WorkflowExecutionWithPhasesDTO response = new WorkflowExecutionWithPhasesDTO(workflowExecution, phases);
         return ResponseEntity.ok(response);
-    }
-
-
-    @Data
-    @AllArgsConstructor
-    public static class GenerateWorkflowRequestDTO {
-        public String workflowId;
-        public String userId;
-        public String flowDefinition;
     }
 
     @Data
