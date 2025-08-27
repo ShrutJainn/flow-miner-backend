@@ -16,7 +16,10 @@ import java.util.Map;
 public class Phase {
     @Enumerated(EnumType.STRING)
     private EnvironmentPhaseType type;
+
+    private String executionPhaseId;
     Map<String, String> inputs = new HashMap<>();
-    Map<String, String> outputs = new HashMap<>();
+//    Map<String, String> outputs = new HashMap<>();
+    private String outputs;
 }
 

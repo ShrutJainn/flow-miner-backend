@@ -17,9 +17,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.flowminer.api.utils.ReferenceResolver.resolveInputs;
 
 @Service
 public class WorkflowExecutionService {
@@ -77,10 +80,39 @@ public class WorkflowExecutionService {
         FlowToExecutionPlanResponse response = flowToExecutionPlanService.generatePlan(nodes, edges);
 
         Environment environment = new Environment();
+
+//        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+//            for (AppNode node : phase.getNodes()) {
+//                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(), node.getData().getInputs(), node.getData().getOutputs()));
+//            }
+//        }
+
         //TODO : Execute the phases and consume credits
         for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
             for (AppNode node : phase.getNodes()) {
-                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(), node.getData().getInputs(), node.getData().getOutputs()));
+                ExecutionPhase executionPhase = new ExecutionPhase();
+                executionPhase.setWorkflowExecutionId(execution.getId());
+                executionPhase.setUserId(userId);
+                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
+                executionPhase.setNumber(phase.getPhase());
+
+                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
+
+                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
+                        ? nodeCopy.getInputs().entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
+                        ))
+                        : new HashMap<>();
+
+
+                nodeCopy.setInputs(cleanedInputs);
+                executionPhase.setNode(mapper.writeValueAsString(node));
+                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
+                executionPhase.setStartedAt(LocalDateTime.now());
+                executionPhaseRepository.save(executionPhase);
+                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(),executionPhase.getId().toString(), node.getData().getInputs(), null));
             }
         }
 
@@ -104,7 +136,23 @@ public class WorkflowExecutionService {
                     String updatedEnv = redisService.getEnvironment(redisKey);
 
                     Map<String, Object> envMap = new ObjectMapper().readValue(updatedEnv, Map.class);
+
+                    Environment env = objectMapper.convertValue(envMap, Environment.class);
+
+                    for(Phase phase : env.getPhases().values()) {
+                        String executionPhaseId = phase.getExecutionPhaseId();
+                        ExecutionPhase executionPhase = executionPhaseRepository.findById(UUID.fromString(executionPhaseId)).orElseThrow(() -> new RuntimeException("Execution Phase not found"));
+                        Map<String, Object> resolvedInputs = resolveInputs(phase.getInputs(), env);
+
+                        executionPhase.setInputs(mapper.writeValueAsString(resolvedInputs));
+//                        executionPhase.setInputs(mapper.writeValueAsString(phase.getInputs()));
+                        executionPhase.setOutputs(mapper.writeValueAsString(phase.getOutputs()));
+                        executionPhase.setCompletedAt(LocalDateTime.now());
+                        executionPhaseRepository.save(executionPhase);
+                    }
                     System.out.println("updated environment from redis : " + envMap);
+
+
 
                 } else {
                     System.err.println("Node server error : " + environmentFromNodeServer.getBody().get("error"));
@@ -118,34 +166,34 @@ public class WorkflowExecutionService {
             throw e;
         }
 
-                List<ExecutionPhase> phases = new ArrayList<>();
-
-        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
-            for (AppNode node : phase.getNodes()) {
-                ExecutionPhase executionPhase = new ExecutionPhase();
-                executionPhase.setWorkflowExecutionId(execution.getId());
-                executionPhase.setUserId(userId);
-                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
-                executionPhase.setNumber(phase.getPhase());
-
-                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
-
-                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
-                        ? nodeCopy.getInputs().entrySet().stream()
-                        .collect(Collectors.toMap(
-                                Map.Entry::getKey,
-                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
-                        ))
-                        : new HashMap<>();
-
-
-                nodeCopy.setInputs(cleanedInputs);
-                executionPhase.setNode(mapper.writeValueAsString(node));
-                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
-                phases.add(executionPhase);
-            }
-        }
-        executionPhaseRepository.saveAll(phases);
+//        List<ExecutionPhase> phases = new ArrayList<>();
+//
+//        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+//            for (AppNode node : phase.getNodes()) {
+//                ExecutionPhase executionPhase = new ExecutionPhase();
+//                executionPhase.setWorkflowExecutionId(execution.getId());
+//                executionPhase.setUserId(userId);
+//                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
+//                executionPhase.setNumber(phase.getPhase());
+//
+//                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
+//
+//                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
+//                        ? nodeCopy.getInputs().entrySet().stream()
+//                        .collect(Collectors.toMap(
+//                                Map.Entry::getKey,
+//                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
+//                        ))
+//                        : new HashMap<>();
+//
+//
+//                nodeCopy.setInputs(cleanedInputs);
+//                executionPhase.setNode(mapper.writeValueAsString(node));
+//                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
+//                phases.add(executionPhase);
+//            }
+//        }
+//        executionPhaseRepository.saveAll(phases);
 
 
         // ---------------------------------------------------------------

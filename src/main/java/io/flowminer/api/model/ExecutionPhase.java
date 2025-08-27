@@ -31,7 +31,9 @@ public class ExecutionPhase {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(columnDefinition = "TEXT")
     private String inputs;
+    @Column(columnDefinition = "TEXT")
     private String outputs;
 
     private int creditsCost;
