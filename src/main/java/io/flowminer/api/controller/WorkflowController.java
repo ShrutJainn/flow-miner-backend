@@ -1,18 +1,11 @@
 package io.flowminer.api.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.flowminer.api.dto.*;
-import io.flowminer.api.enums.ExecutionPhaseStatus;
 import io.flowminer.api.enums.WorkflowEnum;
-import io.flowminer.api.enums.WorkflowExecutionStatus;
-import io.flowminer.api.enums.WorkflowExecutionTrigger;
-import io.flowminer.api.model.EnvironmentModel;
 import io.flowminer.api.model.ExecutionPhase;
 import io.flowminer.api.model.Workflow;
 import io.flowminer.api.model.WorkflowExecution;
-import io.flowminer.api.registry.TaskRegistry;
-import io.flowminer.api.repository.EnvironmentRepository;
 import io.flowminer.api.repository.ExecutionPhaseRepository;
 import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
@@ -21,15 +14,12 @@ import io.flowminer.api.service.RedisService;
 import io.flowminer.api.service.WorkflowService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.coyote.Response;
-import org.hibernate.jdbc.Work;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workflow")
@@ -41,11 +31,10 @@ public class WorkflowController {
     public final FlowToExecutionPlanService flowToExecutionPlanService;
     public final ExecutionPhaseRepository executionPhaseRepository;
     public final ObjectMapper objectMapper;
-    public final EnvironmentRepository environmentRepository;
     public final RestTemplate restTemplate;
     public final RedisService redisService;
 
-    public WorkflowController(WorkflowService workflowService, RedisService redisService, RestTemplate restTemplate, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ObjectMapper objectMapper, EnvironmentRepository environmentRepository) {
+    public WorkflowController(WorkflowService workflowService, RedisService redisService, RestTemplate restTemplate, WorkflowRepository workflowRepository, WorkflowExecutionRepository workflowExecutionRepository, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ObjectMapper objectMapper) {
         this.workflowService = workflowService;
         this.workflowRepository = workflowRepository;
         this.flowToExecutionPlanService = flowToExecutionPlanService;
@@ -53,7 +42,6 @@ public class WorkflowController {
         this.executionPhaseRepository = executionPhaseRepository;
         this.redisService = redisService;
         this.objectMapper = objectMapper;
-        this.environmentRepository = environmentRepository;
         this.restTemplate = restTemplate;
     }
 
