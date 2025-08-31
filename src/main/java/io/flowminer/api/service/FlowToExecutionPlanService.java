@@ -15,6 +15,7 @@ public class FlowToExecutionPlanService {
     public FlowToExecutionPlanResponse generatePlan(List<AppNode> nodes, List<Edge> edges) {
         Map<String, AppNode> nodeMap = nodes.stream()
                 .collect(Collectors.toMap(AppNode::getId, node -> node));
+        int totalCreditsConsumed = 0;
 
 
         // 1. Find entry point
@@ -27,7 +28,7 @@ public class FlowToExecutionPlanService {
         if (entryPoints.isEmpty()) {
             FlowToExecutionPlanResponse.ErrorDetail error = new FlowToExecutionPlanResponse.ErrorDetail(
                     FlowToExecutionPlanErrorType.NO_ENTRY_POINT, new ArrayList<>());
-            return new FlowToExecutionPlanResponse(null, error);
+            return new FlowToExecutionPlanResponse(null, error, 0);
         }
 
         Set<String> planned = new HashSet<>();
@@ -50,7 +51,7 @@ public class FlowToExecutionPlanService {
 
                 FlowToExecutionPlanResponse.ErrorDetail error = new FlowToExecutionPlanResponse.ErrorDetail(
                         FlowToExecutionPlanErrorType.INVALID_INPUTS, missingInputs);
-                return new FlowToExecutionPlanResponse(null, error);
+                return new FlowToExecutionPlanResponse(null, error, 0);
             }
 
             for (AppNode node : executableNodes) {
@@ -60,6 +61,8 @@ public class FlowToExecutionPlanService {
                         .toList();
 
                 TaskDefinition task = TaskRegistry.get(node.getData().getType().toString());
+                int credits = TaskRegistry.get(node.getData().getType().toString()).getCredits();
+                totalCreditsConsumed += credits;
                 if (task != null && task.getInputs() != null) {
                     for (Input input : task.getInputs()) {
                         String inputName = input.getName();
@@ -88,7 +91,7 @@ public class FlowToExecutionPlanService {
         }
 
         System.out.println("Execution plan from backend : " + phases);
-        return new FlowToExecutionPlanResponse(new WorkflowExecutionPlan(phases), null);
+        return new FlowToExecutionPlanResponse(new WorkflowExecutionPlan(phases), null, totalCreditsConsumed);
     }
 
     private List<String> getInvalidInputs(AppNode node, List<Edge> edges, Set<String> planned) {

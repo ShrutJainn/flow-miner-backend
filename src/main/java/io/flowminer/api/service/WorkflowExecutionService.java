@@ -6,11 +6,14 @@ import io.flowminer.api.dto.*;
 import io.flowminer.api.enums.ExecutionPhaseStatus;
 import io.flowminer.api.enums.WorkflowExecutionStatus;
 import io.flowminer.api.enums.WorkflowExecutionTrigger;
+import io.flowminer.api.exception.CustomException;
 import io.flowminer.api.model.ExecutionPhase;
+import io.flowminer.api.model.UserBalance;
 import io.flowminer.api.model.Workflow;
 import io.flowminer.api.model.WorkflowExecution;
 import io.flowminer.api.registry.TaskRegistry;
 import io.flowminer.api.repository.ExecutionPhaseRepository;
+import io.flowminer.api.repository.UserBalanceRepository;
 import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
 import org.springframework.http.ResponseEntity;
@@ -34,8 +37,9 @@ public class WorkflowExecutionService {
     public final FlowToExecutionPlanService flowToExecutionPlanService;
     public final ObjectMapper objectMapper;
     public final RedisService redisService;
+    public final UserBalanceRepository userBalanceRepository;
 
-    WorkflowExecutionService(WorkflowExecutionRepository workflowExecutionRepository, RedisService redisService, WorkflowRepository workflowRepository, ObjectMapper objectMapper, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ExecutionPhaseService executionPhaseService, RestTemplate restTemplate) {
+    WorkflowExecutionService(WorkflowExecutionRepository workflowExecutionRepository, UserBalanceRepository userBalanceRepository, RedisService redisService, WorkflowRepository workflowRepository, ObjectMapper objectMapper, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ExecutionPhaseService executionPhaseService, RestTemplate restTemplate) {
         this.workflowExecutionRepository = workflowExecutionRepository;
         this.workflowRepository = workflowRepository;
         this.executionPhaseRepository = executionPhaseRepository;
@@ -44,6 +48,7 @@ public class WorkflowExecutionService {
         this.flowToExecutionPlanService = flowToExecutionPlanService;
         this.objectMapper = objectMapper;
         this.redisService = redisService;
+        this.userBalanceRepository = userBalanceRepository;
     }
 
     public String executeWorkflow(String workflowId, String userId, String flowDefinition) throws JsonProcessingException {
@@ -78,6 +83,13 @@ public class WorkflowExecutionService {
         List<Edge> edges = flowDefinitionObject.getEdges();
 
         FlowToExecutionPlanResponse response = flowToExecutionPlanService.generatePlan(nodes, edges);
+        System.out.println("total credits comsumed : " + response.getTotalCreditsConsumed());
+        UserBalance userBalance = userBalanceRepository.findByUserId(userId);
+
+        if(userBalance.getCredits() < response.getTotalCreditsConsumed()) {
+            throw new CustomException("Insufficient balance");
+        }
+
 
         Environment environment = new Environment();
 
@@ -145,9 +157,9 @@ public class WorkflowExecutionService {
                         Map<String, Object> resolvedInputs = resolveInputs(phase.getInputs(), env);
 
                         executionPhase.setInputs(mapper.writeValueAsString(resolvedInputs));
-//                        executionPhase.setInputs(mapper.writeValueAsString(phase.getInputs()));
                         executionPhase.setOutputs(mapper.writeValueAsString(phase.getOutputs()));
                         executionPhase.setCompletedAt(LocalDateTime.now());
+                        executionPhase.setCreditsCost(TaskRegistry.get(phase.getType().toString()).getCredits());
                         executionPhaseRepository.save(executionPhase);
                     }
                     System.out.println("updated environment from redis : " + envMap);
@@ -197,6 +209,8 @@ public class WorkflowExecutionService {
 
 
         // ---------------------------------------------------------------
+        userBalance.setCredits(userBalance.getCredits() - response.getTotalCreditsConsumed());
+        userBalanceRepository.save(userBalance);
         finalizeWorkflow(execution, creditsConsumed, executionFailed);
         System.out.println("Environment inside executeWorkflow : " + environment);
 

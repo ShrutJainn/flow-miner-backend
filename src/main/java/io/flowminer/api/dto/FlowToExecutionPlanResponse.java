@@ -13,6 +13,7 @@ import java.util.List;
 public class FlowToExecutionPlanResponse {
     public WorkflowExecutionPlan executionPlan;
     public ErrorDetail error;
+    public int totalCreditsConsumed;
     @Data
     @AllArgsConstructor
     public static class ErrorDetail {

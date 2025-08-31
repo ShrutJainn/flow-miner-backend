@@ -23,14 +23,14 @@ public class TaskRegistry {
                 false,
                 List.of(new Input("Web page", TaskParamType.BROWSER_INSTANCE, true)),
                 List.of(new Output("Html", "HTML_STRING")),
-                3,
+                2,
                 "Page to HTML"
         ));
         registry.put("EXTRACT_TEXT_FROM_ELEMENT", new TaskDefinition(
                 false,
                 List.of(new Input("Html", TaskParamType.BROWSER_INSTANCE, true), new Input("Selector", TaskParamType.BROWSER_INSTANCE, true)),
                 List.of(new Output("Text", "STRING")),
-                4,
+                2,
                 "Extract Text From Element"
         ));
     }
