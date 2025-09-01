@@ -53,20 +53,9 @@ public class WorkflowExecutionService {
 
     public String executeWorkflow(String workflowId, String userId, String flowDefinition) throws JsonProcessingException {
         WorkflowExecution execution = initializeWorkflow(workflowId, userId);
-//        List<ExecutionPhase> phases = executionPhaseRepository.findAllByWorkflowExecutionId(executionId);
-//        initializePhases(executionId);
 
-        int creditsConsumed = 0;
         boolean executionFailed = false;
-//        Environment environment = new Environment();
-//
-//        for(ExecutionPhase phase : phases) {
-//            ExecutePhaseResponseDTO response = executionPhaseService.executeWorkflowPhase(phase, environment);
-//            if(!response.isSuccess()) {
-//                executionFailed = true;
-//                break;
-//            }
-//        }
+
 
         // ----------------------------------------------------------------
 
@@ -92,12 +81,6 @@ public class WorkflowExecutionService {
 
 
         Environment environment = new Environment();
-
-//        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
-//            for (AppNode node : phase.getNodes()) {
-//                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(), node.getData().getInputs(), node.getData().getOutputs()));
-//            }
-//        }
 
         //TODO : Execute the phases and consume credits
         for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
@@ -178,58 +161,16 @@ public class WorkflowExecutionService {
             throw e;
         }
 
-//        List<ExecutionPhase> phases = new ArrayList<>();
-//
-//        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
-//            for (AppNode node : phase.getNodes()) {
-//                ExecutionPhase executionPhase = new ExecutionPhase();
-//                executionPhase.setWorkflowExecutionId(execution.getId());
-//                executionPhase.setUserId(userId);
-//                executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
-//                executionPhase.setNumber(phase.getPhase());
-//
-//                AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
-//
-//                Map<String, Object> cleanedInputs = nodeCopy.getInputs() != null
-//                        ? nodeCopy.getInputs().entrySet().stream()
-//                        .collect(Collectors.toMap(
-//                                Map.Entry::getKey,
-//                                e -> (e.getValue() instanceof Map<?, ?> map && map.containsKey("id")) ? map.get("id") : e.getValue()
-//                        ))
-//                        : new HashMap<>();
-//
-//
-//                nodeCopy.setInputs(cleanedInputs);
-//                executionPhase.setNode(mapper.writeValueAsString(node));
-//                executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
-//                phases.add(executionPhase);
-//            }
-//        }
-//        executionPhaseRepository.saveAll(phases);
-
-
         // ---------------------------------------------------------------
         userBalance.setCredits(userBalance.getCredits() - response.getTotalCreditsConsumed());
         userBalanceRepository.save(userBalance);
-        finalizeWorkflow(execution, creditsConsumed, executionFailed);
+        finalizeWorkflow(execution, response.getTotalCreditsConsumed(), executionFailed);
         System.out.println("Environment inside executeWorkflow : " + environment);
 
         return execution.getId().toString();
     }
 
     private WorkflowExecution initializeWorkflow(String workflowId, String userId) {
-//        WorkflowExecution execution = workflowExecutionRepository.findById(executionId).orElseThrow(() -> new RuntimeException("Workflow not found"));
-//        Workflow workflow = workflowRepository.findById(execution.getWorkflowId()).orElseThrow(() -> new RuntimeException("Workflow not found"));
-//
-//        execution.setStartedAt(LocalDateTime.now());
-//        execution.setStatus(WorkflowExecutionStatus.RUNNING);
-//        workflowExecutionRepository.save(execution);
-//
-//        workflow.setLastRunAt(LocalDateTime.now());
-//        workflow.setLastRunId(executionId.toString());
-//        workflow.setLastRunStatus(WorkflowExecutionStatus.RUNNING);
-//        workflowRepository.save(workflow);
-//        return execution;
 
         WorkflowExecution workflowExecution = new WorkflowExecution();
         Workflow workflow = workflowRepository.findById(UUID.fromString(workflowId)).orElseThrow(() -> new RuntimeException("Workflow not found"));

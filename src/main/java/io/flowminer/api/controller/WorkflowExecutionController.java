@@ -24,57 +24,22 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/workflow-execution")
 public class WorkflowExecutionController {
-    public final WorkflowExecutionRepository workflowExecutionRepository;
-    public final WorkflowRepository workflowRepository;
-    public final ExecutionPhaseRepository executionPhaseRepository;
     public final WorkflowExecutionService workflowExecutionService;
-    WorkflowExecutionController(WorkflowExecutionRepository workflowExecutionRepository, WorkflowRepository workflowRepository, ExecutionPhaseRepository executionPhaseRepository, WorkflowExecutionService workflowExecutionService) {
-        this.workflowExecutionRepository = workflowExecutionRepository;
-        this.workflowRepository = workflowRepository;
-        this.executionPhaseRepository = executionPhaseRepository;
+    public final WorkflowExecutionRepository workflowExecutionRepository;
+    WorkflowExecutionController(WorkflowExecutionService workflowExecutionService, WorkflowExecutionRepository workflowExecutionRepository) {
         this.workflowExecutionService = workflowExecutionService;
+        this.workflowExecutionRepository = workflowExecutionRepository;
     }
     @PostMapping("/execute")
     public ResponseEntity<String> executeWorkflow(@RequestBody GenerateWorkflowRequestDTO req) throws JsonProcessingException {
-//        WorkflowExecution execution = workflowExecutionRepository.findById(UUID.fromString(executionId)).orElseThrow(() -> new RuntimeException("Workflow not found"));
-//        Workflow workflow = workflowRepository.findById(execution.getWorkflowId()).orElseThrow(() -> new RuntimeException("Workflow not found"));
-//
-//        // Initialize the workflow
-//        execution.setStartedAt(LocalDateTime.now());
-//        execution.setStatus(WorkflowExecutionStatus.RUNNING);
-//        workflowExecutionRepository.save(execution);
-//
-//        workflow.setLastRunAt(LocalDateTime.now());
-//        workflow.setLastRunStatus(WorkflowExecutionStatus.RUNNING);
-//        workflow.setLastRunId(executionId);
-//        workflowRepository.save(workflow);
-//
-//        //initialize phase status
-//        List<ExecutionPhase> executionPhases = executionPhaseRepository.findAllByWorkflowExecutionId(UUID.fromString(executionId));
-//        for(ExecutionPhase phase : executionPhases) {
-//            phase.setStatus(ExecutionPhaseStatus.PENDING);
-//        }
-//        executionPhaseRepository.saveAll(executionPhases);
-//
-//
-//        int creditsConsumed = 0;
-//        boolean executionFailed = false;
-//
-//        //TODO : execute the phase and consume credits
-//
-//        //finalize workflow
-//        WorkflowExecutionStatus finalStatus = executionFailed ? WorkflowExecutionStatus.FAILED : WorkflowExecutionStatus.COMPLETED;
-//        execution.setStatus(finalStatus);
-//        execution.setCompletedAt(LocalDateTime.now());
-//        execution.setCreditsConsumed(creditsConsumed);
-//        workflowExecutionRepository.save(execution);
-//
-//        Workflow workflowAfterExecution = workflowRepository.findByIdAndLastRunId(execution.getWorkflowId(), executionId);
-//        workflowAfterExecution.setLastRunStatus(finalStatus);
-//        workflowRepository.save(workflowAfterExecution);
-
 
         String workflowExecutionId = workflowExecutionService.executeWorkflow(req.getWorkflowId(), req.getUserId(), req.getFlowDefinition());
         return ResponseEntity.ok(workflowExecutionId);
+    }
+    @GetMapping("/")
+    public List<WorkflowExecution> getWorkflowExecutions(@RequestParam String workflowId, @RequestParam String userId) {
+        if(userId.isEmpty() || workflowId.isEmpty()) throw new IllegalArgumentException("Invalid arguments");
+
+        return workflowExecutionRepository.findByWorkflowIdAndUserIdOrderByCreatedAtDesc(UUID.fromString(workflowId), userId);
     }
 }
