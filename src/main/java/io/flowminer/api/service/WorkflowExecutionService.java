@@ -107,7 +107,7 @@ public class WorkflowExecutionService {
                 executionPhase.setName(TaskRegistry.get(node.getData().getType().toString()).getLabel());
                 executionPhase.setStartedAt(LocalDateTime.now());
                 executionPhaseRepository.save(executionPhase);
-                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(),executionPhase.getId().toString(), node.getData().getInputs(), null));
+                environment.getPhases().put(node.getId(), new Phase(node.getData().getType(),executionPhase.getId().toString(), node.getData().getInputs(), null, ""));
             }
         }
 
@@ -131,6 +131,7 @@ public class WorkflowExecutionService {
                     String updatedEnv = redisService.getEnvironment(redisKey);
 
                     Map<String, Object> envMap = new ObjectMapper().readValue(updatedEnv, Map.class);
+                    System.out.println("env map : " + envMap);
 
                     Environment env = objectMapper.convertValue(envMap, Environment.class);
 
@@ -150,7 +151,23 @@ public class WorkflowExecutionService {
 
 
                 } else {
-                    System.err.println("Node server error : " + environmentFromNodeServer.getBody().get("error"));
+                    System.out.println("Node server error : " + environmentFromNodeServer.getBody().get("error"));
+                    String updatedEnv = redisService.getEnvironment(redisKey);
+                    Map<String, Object> envMap = new ObjectMapper().readValue(updatedEnv, Map.class);
+
+                    // optional: inspect phases with errors
+                    List<String> phaseErrors = new ArrayList<>();
+                    Map<String, Object> phases = (Map<String, Object>) envMap.get("phases");
+                    for (Map.Entry<String, Object> entry : phases.entrySet()) {
+                        Map<String, Object> phase = (Map<String, Object>) entry.getValue();
+                        if (phase.containsKey("error")) {
+                            phaseErrors.add("Phase " + entry.getKey() + " failed: " + phase.get("error"));
+                        }
+                    }
+
+                    executionFailed = true;
+                    finalizeWorkflow(execution, 0, true);
+                    throw new CustomException("Node server error(s): " + String.join(", ", phaseErrors));
                 }
             } else {
                 System.err.println("Node server returned status : " + environmentFromNodeServer.getStatusCode());
@@ -158,7 +175,19 @@ public class WorkflowExecutionService {
 
         } catch (Exception e) {
             e.printStackTrace();
-            throw e;
+
+            String errorMessage = "Node server request failed";
+            if (e instanceof org.springframework.web.client.HttpStatusCodeException httpEx) {
+                errorMessage = httpEx.getResponseBodyAsString();
+            } else if (e.getMessage() != null) {
+                errorMessage = e.getMessage();
+            }
+            System.out.println("Error message : " + errorMessage);
+
+            executionFailed = true;
+            finalizeWorkflow(execution, 0, true);
+
+            throw new CustomException(errorMessage);
         }
 
         // ---------------------------------------------------------------

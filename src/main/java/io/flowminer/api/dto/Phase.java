@@ -19,7 +19,7 @@ public class Phase {
 
     private String executionPhaseId;
     Map<String, String> inputs = new HashMap<>();
-//    Map<String, String> outputs = new HashMap<>();
     private String outputs;
+    private String error;
 }
 
