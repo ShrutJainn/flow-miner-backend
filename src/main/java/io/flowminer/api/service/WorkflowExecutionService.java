@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.flowminer.api.dto.*;
 import io.flowminer.api.enums.ExecutionPhaseStatus;
+import io.flowminer.api.enums.WorkflowEnum;
 import io.flowminer.api.enums.WorkflowExecutionStatus;
 import io.flowminer.api.enums.WorkflowExecutionTrigger;
 import io.flowminer.api.exception.CustomException;
@@ -64,26 +65,31 @@ public class WorkflowExecutionService {
             throw new RuntimeException("Workflow not found or doesn't belong to the specified user");
         Workflow workflow = workflowOpt.get();
 
-        if (flowDefinition.isEmpty()) throw new RuntimeException("Flow definition is not defined");
 
         ObjectMapper mapper = new ObjectMapper();
-        FlowDefinitionDTO flowDefinitionObject = mapper.readValue(flowDefinition, FlowDefinitionDTO.class);
-        List<AppNode> nodes = flowDefinitionObject.getNodes();
-        List<Edge> edges = flowDefinitionObject.getEdges();
 
-        FlowToExecutionPlanResponse response = flowToExecutionPlanService.generatePlan(nodes, edges);
-        System.out.println("total credits comsumed : " + response.getTotalCreditsConsumed());
+        FlowToExecutionPlanResponse response = new FlowToExecutionPlanResponse();
+        WorkflowExecutionPlan executionPlan = new WorkflowExecutionPlan();
+        if(workflow.getStatus().equals(WorkflowEnum.PUBLISHED)) {
+                executionPlan = objectMapper.readValue(workflow.getExecutionPlan(), WorkflowExecutionPlan.class);
+        } else {
+
+            FlowDefinitionDTO flowDefinitionObject = mapper.readValue(flowDefinition, FlowDefinitionDTO.class);
+            List<AppNode> nodes = flowDefinitionObject.getNodes();
+            List<Edge> edges = flowDefinitionObject.getEdges();
+            response = flowToExecutionPlanService.generatePlan(nodes, edges);
+            executionPlan = response.getExecutionPlan();
+        }
         UserBalance userBalance = userBalanceRepository.findByUserId(userId);
 
         if(userBalance.getCredits() < response.getTotalCreditsConsumed()) {
             throw new CustomException("Insufficient balance");
         }
 
-
         Environment environment = new Environment();
 
         //TODO : Execute the phases and consume credits
-        for (WorkflowExecutionPlanPhase phase : response.getExecutionPlan().getPhases()) {
+        for (WorkflowExecutionPlanPhase phase : executionPlan.getPhases()) {
             for (AppNode node : phase.getNodes()) {
                 ExecutionPhase executionPhase = new ExecutionPhase();
                 executionPhase.setWorkflowExecutionId(execution.getId());
@@ -146,7 +152,6 @@ public class WorkflowExecutionService {
                         executionPhase.setCreditsCost(TaskRegistry.get(phase.getType().toString()).getCredits());
                         executionPhaseRepository.save(executionPhase);
                     }
-                    System.out.println("updated environment from redis : " + envMap);
 
 
 

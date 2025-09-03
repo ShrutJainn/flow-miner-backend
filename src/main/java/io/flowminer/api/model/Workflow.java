@@ -38,4 +38,10 @@ public class Workflow {
 
     @Enumerated(EnumType.STRING)
     private WorkflowExecutionStatus lastRunStatus;
+
+    @Column(name = "execution_plan", columnDefinition = "TEXT", nullable = true)
+    private String executionPlan;
+
+    private int creditsCost = 0;
+
 }

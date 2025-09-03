@@ -1,5 +1,6 @@
 package io.flowminer.api.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.flowminer.api.dto.*;
 import io.flowminer.api.enums.WorkflowEnum;
@@ -101,6 +102,18 @@ public class WorkflowController {
         phases.sort(Comparator.comparingInt(ExecutionPhase::getNumber));
         WorkflowExecutionWithPhasesDTO response = new WorkflowExecutionWithPhasesDTO(workflowExecution, phases);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/publish")
+    public ResponseEntity<String> publishWorkflow(@RequestBody GenerateWorkflowRequestDTO request) throws JsonProcessingException {
+        String workflowPublishId = workflowService.publishWorkflow(request.getWorkflowId(), request.getUserId(), request.getFlowDefinition());
+        return ResponseEntity.ok(workflowPublishId);
+    }
+    @PostMapping("/unpublish")
+    public ResponseEntity<String> unpublishWorkflow(@RequestBody GenerateWorkflowRequestDTO request) {
+        String workflowId = workflowService.unpublishWorkflow(request.getWorkflowId(), request.getUserId());
+
+        return ResponseEntity.ok(workflowId);
     }
 
     @Data
