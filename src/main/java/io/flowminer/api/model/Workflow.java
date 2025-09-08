@@ -43,5 +43,6 @@ public class Workflow {
     private String executionPlan;
 
     private int creditsCost = 0;
-
+    private String cron;
+    private LocalDateTime nextRunAt;
 }

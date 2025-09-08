@@ -15,6 +15,7 @@ import io.flowminer.api.service.RedisService;
 import io.flowminer.api.service.WorkflowService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.hibernate.jdbc.Work;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -64,6 +65,19 @@ public class WorkflowController {
 
         workflowRepository.save(workflow);
         return workflow;
+    }
+    @PostMapping("/duplicate")
+    public void duplicateWorkflow(@RequestBody DuplicateWorkflowRequestDTO request) {
+        Workflow workflow = workflowRepository.findByIdAndUserId(UUID.fromString(request.getWorkflowId()), request.getUserId()).orElseThrow(() -> new RuntimeException("Workflow not found or does not belong to the user"));
+        Workflow newWorkflow = new Workflow();
+        newWorkflow.setName(request.getName());
+        newWorkflow.setDescription(request.getDescription());
+        newWorkflow.setUserId(request.getUserId());
+        newWorkflow.setStatus(WorkflowEnum.DRAFT);
+        newWorkflow.setDefinition(workflow.getDefinition());
+        newWorkflow.setCreatedAt(LocalDateTime.now());
+        newWorkflow.setUpdatedAt(LocalDateTime.now());
+        workflowRepository.save(newWorkflow);
     }
 
     @DeleteMapping("/delete")
@@ -115,11 +129,31 @@ public class WorkflowController {
 
         return ResponseEntity.ok(workflowId);
     }
+    @PostMapping("/update-cron")
+    public ResponseEntity<String> updateCronWorkflow(@RequestBody UpdateCronRequestBodyDTO request) {
+        String workflowId = workflowService.updateWorkflowCron(request.getWorkflowId(), request.getUserId(), request.getCron());
+        return ResponseEntity.ok(workflowId);
+    }
+    @PostMapping("/remove-schedule")
+    public void removeSchedule(@RequestBody UpdateCronRequestBodyDTO request) {
+        Workflow workflow = workflowRepository.findByIdAndUserId(UUID.fromString(request.getWorkflowId()), request.getUserId()).orElseThrow(() -> new RuntimeException("Workflow does not exist of doesn't belong to the user"));
+
+        workflow.setCron(null);
+        workflow.setNextRunAt(null);
+        workflowRepository.save(workflow);
+    }
 
     @Data
     @AllArgsConstructor
     public static class WorkflowExecutionWithPhasesDTO {
         private WorkflowExecution workflowExecution;
         private List<ExecutionPhase> phases;
+    }
+    @Data
+    @AllArgsConstructor
+    public static class UpdateCronRequestBodyDTO {
+        private String workflowId;
+        private String userId;
+        private String cron;
     }
 }

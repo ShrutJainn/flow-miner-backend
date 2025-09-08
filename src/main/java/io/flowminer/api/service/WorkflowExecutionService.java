@@ -154,7 +154,6 @@ public class WorkflowExecutionService {
                     }
 
 
-
                 } else {
                     System.out.println("Node server error : " + environmentFromNodeServer.getBody().get("error"));
                     String updatedEnv = redisService.getEnvironment(redisKey);

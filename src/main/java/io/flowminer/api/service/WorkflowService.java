@@ -10,9 +10,12 @@ import io.flowminer.api.enums.WorkflowEnum;
 import io.flowminer.api.exception.CustomException;
 import io.flowminer.api.model.Workflow;
 import io.flowminer.api.repository.WorkflowRepository;
+import io.flowminer.api.utils.CronUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,6 +64,32 @@ public class WorkflowService {
         workflow.setExecutionPlan(null);
         workflow.setCreditsCost(0);
         workflowRepository.save(workflow);
+        return workflow.getId().toString();
+    }
+    public String updateWorkflowCron(String workflowId, String userId, String cron) {
+        Workflow workflow = workflowRepository.findByIdAndUserId(UUID.fromString(workflowId), userId).orElseThrow(() -> new RuntimeException("Workflow not found"));
+//        try{
+//            workflow.setCron(cron);
+//            LocalDateTime nextRun = CronUtils.getNextExecutionTime(cron);
+//            workflow.setNextRunAt(nextRun);
+//            workflow.setUpdatedAt(LocalDateTime.now());
+//            workflowRepository.save(workflow);
+//
+//        } catch (ParseException e) {
+//            throw new CustomException("Invalid cron expression: " + cron);
+//        }
+        try {
+            workflow.setCron(cron);
+            LocalDateTime nextRun = CronUtils.getNextExecutionTime(cron);
+            workflow.setNextRunAt(nextRun);
+            workflow.setUpdatedAt(LocalDateTime.now());
+            workflowRepository.save(workflow);
+
+        } catch (IllegalArgumentException e) {  // cron-utils throws this if invalid
+            throw new CustomException("Invalid cron expression: " + cron);
+        } catch (RuntimeException e) {  // catch anything else from ExecutionTime calculation
+            throw new CustomException("Could not calculate next execution for cron: " + cron);
+        }
         return workflow.getId().toString();
     }
 }
