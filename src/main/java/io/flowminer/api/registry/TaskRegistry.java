@@ -28,10 +28,24 @@ public class TaskRegistry {
         ));
         registry.put("EXTRACT_TEXT_FROM_ELEMENT", new TaskDefinition(
                 false,
-                List.of(new Input("Html", TaskParamType.BROWSER_INSTANCE, true), new Input("Selector", TaskParamType.BROWSER_INSTANCE, true)),
+                List.of(new Input("Html", TaskParamType.BROWSER_INSTANCE, true), new Input("Selector", TaskParamType.STRING, true)),
                 List.of(new Output("Text", "STRING")),
                 2,
                 "Extract Text From Element"
+        ));
+        registry.put("FILL_INPUT", new TaskDefinition(
+                false,
+                List.of(new Input("Web page", TaskParamType.BROWSER_INSTANCE, true), new Input("Selector", TaskParamType.STRING, true), new Input("Value", TaskParamType.STRING, true)),
+                List.of(new Output("Web page", "BROWSER_INSTANCE")),
+                1,
+                "Fill Input"
+        ));
+        registry.put("CLICK_ELEMENT", new TaskDefinition(
+                false,
+                List.of(new Input("Web page", TaskParamType.BROWSER_INSTANCE, true), new Input("Selector", TaskParamType.STRING, true)),
+                List.of(new Output("Web page", "BROWSER_INSTANCE")),
+                1,
+                "Click Element"
         ));
     }
     public static TaskDefinition get(String type){

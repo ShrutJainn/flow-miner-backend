@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 @Service
 public class FlowToExecutionPlanService {
     public FlowToExecutionPlanResponse generatePlan(List<AppNode> nodes, List<Edge> edges) {
+
         Map<String, AppNode> nodeMap = nodes.stream()
                 .collect(Collectors.toMap(AppNode::getId, node -> node));
         int totalCreditsConsumed = 0;

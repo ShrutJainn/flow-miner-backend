@@ -33,18 +33,16 @@ public class WorkflowExecutionService {
     public final WorkflowExecutionRepository workflowExecutionRepository;
     public final WorkflowRepository workflowRepository;
     public final ExecutionPhaseRepository executionPhaseRepository;
-    public final ExecutionPhaseService executionPhaseService;
     public final RestTemplate restTemplate;
     public final FlowToExecutionPlanService flowToExecutionPlanService;
     public final ObjectMapper objectMapper;
     public final RedisService redisService;
     public final UserBalanceRepository userBalanceRepository;
 
-    WorkflowExecutionService(WorkflowExecutionRepository workflowExecutionRepository, UserBalanceRepository userBalanceRepository, RedisService redisService, WorkflowRepository workflowRepository, ObjectMapper objectMapper, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, ExecutionPhaseService executionPhaseService, RestTemplate restTemplate) {
+    WorkflowExecutionService(WorkflowExecutionRepository workflowExecutionRepository, UserBalanceRepository userBalanceRepository, RedisService redisService, WorkflowRepository workflowRepository, ObjectMapper objectMapper, FlowToExecutionPlanService flowToExecutionPlanService, ExecutionPhaseRepository executionPhaseRepository, RestTemplate restTemplate) {
         this.workflowExecutionRepository = workflowExecutionRepository;
         this.workflowRepository = workflowRepository;
         this.executionPhaseRepository = executionPhaseRepository;
-        this.executionPhaseService = executionPhaseService;
         this.restTemplate = restTemplate;
         this.flowToExecutionPlanService = flowToExecutionPlanService;
         this.objectMapper = objectMapper;
@@ -56,9 +54,7 @@ public class WorkflowExecutionService {
         WorkflowExecution execution = initializeWorkflow(workflowId, userId);
 
         boolean executionFailed = false;
-
-
-        // ----------------------------------------------------------------
+        System.out.println("flow definition from frontend : " + flowDefinition);
 
         Optional<Workflow> workflowOpt = workflowRepository.findByIdAndUserId(UUID.fromString(workflowId), userId);
         if (workflowOpt.isEmpty())
@@ -69,7 +65,7 @@ public class WorkflowExecutionService {
         ObjectMapper mapper = new ObjectMapper();
 
         FlowToExecutionPlanResponse response = new FlowToExecutionPlanResponse();
-        WorkflowExecutionPlan executionPlan = new WorkflowExecutionPlan();
+        WorkflowExecutionPlan executionPlan;
         if(workflow.getStatus().equals(WorkflowEnum.PUBLISHED)) {
                 executionPlan = objectMapper.readValue(workflow.getExecutionPlan(), WorkflowExecutionPlan.class);
         } else {
