@@ -49,7 +49,6 @@
       "data": {
         "type": "CLICK_ELEMENT",
         "inputs": {
-          "Web Page": "",
           "Selector": ".btn",
           "Web page": ""
         }

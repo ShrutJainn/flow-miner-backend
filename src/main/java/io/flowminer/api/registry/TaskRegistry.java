@@ -47,6 +47,13 @@ public class TaskRegistry {
                 1,
                 "Click Element"
         ));
+        registry.put("DELIVER_VIA_WEBHOOK", new TaskDefinition(
+                false,
+                List.of(new Input("Target URL", TaskParamType.STRING, true), new Input("Body", TaskParamType.STRING, true)),
+                List.of(new Output()),
+                1,
+                "Click Element"
+        ));
     }
     public static TaskDefinition get(String type){
         return registry.get(type);
