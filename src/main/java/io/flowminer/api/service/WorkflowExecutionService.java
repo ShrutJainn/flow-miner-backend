@@ -3,10 +3,7 @@ package io.flowminer.api.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.flowminer.api.dto.*;
-import io.flowminer.api.enums.ExecutionPhaseStatus;
-import io.flowminer.api.enums.WorkflowEnum;
-import io.flowminer.api.enums.WorkflowExecutionStatus;
-import io.flowminer.api.enums.WorkflowExecutionTrigger;
+import io.flowminer.api.enums.*;
 import io.flowminer.api.exception.CustomException;
 import io.flowminer.api.model.ExecutionPhase;
 import io.flowminer.api.model.UserBalance;
@@ -17,6 +14,7 @@ import io.flowminer.api.repository.ExecutionPhaseRepository;
 import io.flowminer.api.repository.UserBalanceRepository;
 import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
+import io.flowminer.api.utils.EncryptionUtil;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -76,6 +74,7 @@ public class WorkflowExecutionService {
             response = flowToExecutionPlanService.generatePlan(nodes, edges);
             executionPlan = response.getExecutionPlan();
         }
+        System.out.println("execution plan : " + objectMapper.writeValueAsString(executionPlan));
         UserBalance userBalance = userBalanceRepository.findByUserId(userId);
 
         if(userBalance.getCredits() < response.getTotalCreditsConsumed()) {
@@ -92,6 +91,15 @@ public class WorkflowExecutionService {
                 executionPhase.setUserId(userId);
                 executionPhase.setStatus(ExecutionPhaseStatus.CREATED);
                 executionPhase.setNumber(phase.getPhase());
+                if (node.getData().getType().equals(EnvironmentPhaseType.EXTRACT_DATA_WITH_AI)) {
+                    Map<String, String> dataInputs = node.getData().getInputs();
+                    if (dataInputs != null && dataInputs.get("Credentials") != null) {
+                        String encrypted = dataInputs.get("Credentials");
+                        String decrypted = EncryptionUtil.decrypt(encrypted);
+                        dataInputs.put("Credentials", decrypted);
+                    }
+                }
+
 
                 AppNode nodeCopy = mapper.readValue(mapper.writeValueAsString(node), AppNode.class);
 
@@ -133,14 +141,23 @@ public class WorkflowExecutionService {
                     String updatedEnv = redisService.getEnvironment(redisKey);
 
                     Map<String, Object> envMap = new ObjectMapper().readValue(updatedEnv, Map.class);
-                    System.out.println("env map : " + envMap);
 
                     Environment env = objectMapper.convertValue(envMap, Environment.class);
+                    System.out.println("env : " + objectMapper.writeValueAsString(env));
 
                     for(Phase phase : env.getPhases().values()) {
                         String executionPhaseId = phase.getExecutionPhaseId();
                         ExecutionPhase executionPhase = executionPhaseRepository.findById(UUID.fromString(executionPhaseId)).orElseThrow(() -> new RuntimeException("Execution Phase not found"));
                         Map<String, Object> resolvedInputs = resolveInputs(phase.getInputs(), env);
+
+                        if (phase.getType().equals(EnvironmentPhaseType.EXTRACT_DATA_WITH_AI)) {
+                            Object credObj = resolvedInputs.get("Credentials");
+                            if (credObj != null) {
+                                String plainCreds = credObj.toString();
+                                String encryptedCreds = EncryptionUtil.encrypt(plainCreds);
+                                resolvedInputs.put("Credentials", encryptedCreds);
+                            }
+                        }
 
                         executionPhase.setInputs(mapper.writeValueAsString(resolvedInputs));
                         executionPhase.setOutputs(mapper.writeValueAsString(phase.getOutputs()));

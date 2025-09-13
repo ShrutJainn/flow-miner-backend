@@ -1,6 +1,7 @@
 package io.flowminer.api.repository;
 
 import io.flowminer.api.model.Credentials;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,4 +12,7 @@ public interface CredentialsRepository extends JpaRepository<Credentials, UUID> 
     List<Credentials> findAllByUserIdOrderByCreatedAtDesc(String userId);
 
     Optional<Credentials> findByUserIdAndName(String userId, String name);
+
+    @Transactional
+    void deleteByUserIdAndName(String userId, String name);
 }

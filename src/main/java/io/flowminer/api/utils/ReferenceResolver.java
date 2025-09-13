@@ -32,7 +32,6 @@ public class ReferenceResolver {
                 resolved.put(key, value);
             }
         }
-        System.out.println("resolved : " + resolved);
 
         return resolved;
     }

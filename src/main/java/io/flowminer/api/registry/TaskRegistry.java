@@ -54,6 +54,20 @@ public class TaskRegistry {
                 1,
                 "Click Element"
         ));
+        registry.put("EXTRACT_DATA_WITH_AI", new TaskDefinition(
+                false,
+                List.of(new Input("Content", TaskParamType.STRING, true), new Input("Credentials", TaskParamType.CREDENTIALS, true), new Input("Prompt", TaskParamType.STRING, true)),
+                List.of(new Output("Extracted Data", "STRING")),
+                5,
+                "Extract Data With AI"
+        ));
+        registry.put("READ_PROPERTY_FROM_JSON", new TaskDefinition(
+                false,
+                List.of(new Input("JSON", TaskParamType.STRING, true), new Input("Property Name", TaskParamType.STRING, true)),
+                List.of(new Output("Property Value", "STRING")),
+                1,
+                "Read Property from JSON"
+        ));
     }
     public static TaskDefinition get(String type){
         return registry.get(type);
