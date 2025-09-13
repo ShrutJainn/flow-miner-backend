@@ -2,20 +2,20 @@ package io.flowminer.api.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.flowminer.api.dto.AppNode;
-import io.flowminer.api.dto.Edge;
-import io.flowminer.api.dto.FlowDefinitionDTO;
-import io.flowminer.api.dto.FlowToExecutionPlanResponse;
+import io.flowminer.api.dto.*;
 import io.flowminer.api.enums.WorkflowEnum;
 import io.flowminer.api.exception.CustomException;
 import io.flowminer.api.model.Workflow;
+import io.flowminer.api.repository.WorkflowExecutionRepository;
 import io.flowminer.api.repository.WorkflowRepository;
 import io.flowminer.api.utils.CronUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,10 +24,12 @@ public class WorkflowService {
     private final WorkflowRepository workflowRepository;
     private final FlowToExecutionPlanService flowToExecutionPlanService;
     private final ObjectMapper objectMapper;
-    public WorkflowService(WorkflowRepository workflowRepository, ObjectMapper objectMapper, FlowToExecutionPlanService flowToExecutionPlanService) {
+    private final WorkflowExecutionRepository workflowExecutionRepository;
+    public WorkflowService(WorkflowRepository workflowRepository, ObjectMapper objectMapper, FlowToExecutionPlanService flowToExecutionPlanService, WorkflowExecutionRepository workflowExecutionRepository) {
         this.workflowRepository = workflowRepository;
         this.flowToExecutionPlanService = flowToExecutionPlanService;
         this.objectMapper = objectMapper;
+        this.workflowExecutionRepository = workflowExecutionRepository;
     }
 
     public List<Workflow> getWorkflowsByUser(String userId) {
@@ -68,16 +70,6 @@ public class WorkflowService {
     }
     public String updateWorkflowCron(String workflowId, String userId, String cron) {
         Workflow workflow = workflowRepository.findByIdAndUserId(UUID.fromString(workflowId), userId).orElseThrow(() -> new RuntimeException("Workflow not found"));
-//        try{
-//            workflow.setCron(cron);
-//            LocalDateTime nextRun = CronUtils.getNextExecutionTime(cron);
-//            workflow.setNextRunAt(nextRun);
-//            workflow.setUpdatedAt(LocalDateTime.now());
-//            workflowRepository.save(workflow);
-//
-//        } catch (ParseException e) {
-//            throw new CustomException("Invalid cron expression: " + cron);
-//        }
         try {
             workflow.setCron(cron);
             LocalDateTime nextRun = CronUtils.getNextExecutionTime(cron);
@@ -91,5 +83,19 @@ public class WorkflowService {
             throw new CustomException("Could not calculate next execution for cron: " + cron);
         }
         return workflow.getId().toString();
+    }
+
+    public List<PeriodDTO> getPeriodsForUser(String userId) {
+        LocalDateTime minStartedAt = workflowExecutionRepository.findMinStartedAtByUserId(userId);
+        int currentYear = LocalDate.now().getYear();
+        int minYear = (minStartedAt != null) ? minStartedAt.getYear() : currentYear;
+
+        List<PeriodDTO> periods = new ArrayList<>();
+        for(int year=minYear; year<=currentYear; year++) {
+            for(int month=0; month<=11; month++) {
+                periods.add(new PeriodDTO(month, year));
+            }
+        }
+        return periods;
     }
 }

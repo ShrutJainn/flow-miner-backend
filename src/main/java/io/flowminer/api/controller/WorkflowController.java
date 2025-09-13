@@ -15,6 +15,7 @@ import io.flowminer.api.service.RedisService;
 import io.flowminer.api.service.WorkflowService;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.apache.coyote.Response;
 import org.hibernate.jdbc.Work;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -141,6 +142,11 @@ public class WorkflowController {
         workflow.setCron(null);
         workflow.setNextRunAt(null);
         workflowRepository.save(workflow);
+    }
+    @GetMapping("/periods/{userId}")
+    public ResponseEntity<List<PeriodDTO>> getPeriodsForUser(@PathVariable String userId) {
+        List<PeriodDTO> periods = workflowService.getPeriodsForUser(userId);
+        return ResponseEntity.ok(periods);
     }
 
     @Data

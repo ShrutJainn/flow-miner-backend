@@ -52,7 +52,7 @@ public class TaskRegistry {
                 List.of(new Input("Target URL", TaskParamType.STRING, true), new Input("Body", TaskParamType.STRING, true)),
                 List.of(new Output()),
                 1,
-                "Click Element"
+                "Deliver Via Webhook"
         ));
         registry.put("EXTRACT_DATA_WITH_AI", new TaskDefinition(
                 false,
@@ -67,6 +67,27 @@ public class TaskRegistry {
                 List.of(new Output("Property Value", "STRING")),
                 1,
                 "Read Property from JSON"
+        ));
+        registry.put("ADD_PROPERTY_TO_JSON", new TaskDefinition(
+                false,
+                List.of(new Input("JSON", TaskParamType.STRING, true), new Input("Property Name", TaskParamType.STRING, true), new Input("Property Value", TaskParamType.STRING, true)),
+                List.of(new Output("Updated JSON", "STRING")),
+                1,
+                "Add Property To JSON"
+        ));
+        registry.put("NAVIGATE_URL", new TaskDefinition(
+                false,
+                List.of(new Input("Web page", TaskParamType.BROWSER_INSTANCE, true), new Input("URL", TaskParamType.STRING, true)),
+                List.of(new Output("Web page", "BROWSER_INSTANCE")),
+                2,
+                "Navigate URL"
+        ));
+        registry.put("SCROLL_TO_ELEMENT", new TaskDefinition(
+                false,
+                List.of(new Input("Web page", TaskParamType.BROWSER_INSTANCE, true), new Input("Selector", TaskParamType.STRING, true)),
+                List.of(new Output("Web page", "BROWSER_INSTANCE")),
+                1,
+                "Scroll to Element"
         ));
     }
     public static TaskDefinition get(String type){
