@@ -4,7 +4,9 @@ import io.flowminer.api.model.UserBalance;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface UserBalanceRepository extends JpaRepository<UserBalance, String> {
-    UserBalance findByUserId(String id);
+    Optional<UserBalance> findByUserId(String id);
 }

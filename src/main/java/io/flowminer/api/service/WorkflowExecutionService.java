@@ -75,7 +75,7 @@ public class WorkflowExecutionService {
             executionPlan = response.getExecutionPlan();
         }
         System.out.println("execution plan : " + objectMapper.writeValueAsString(executionPlan));
-        UserBalance userBalance = userBalanceRepository.findByUserId(userId);
+        UserBalance userBalance = userBalanceRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("User balance not found"));
 
         if(userBalance.getCredits() < response.getTotalCreditsConsumed()) {
             throw new CustomException("Insufficient balance");

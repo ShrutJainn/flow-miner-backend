@@ -1,5 +1,6 @@
 package io.flowminer.api.repository;
 
+import io.flowminer.api.enums.WorkflowExecutionStatus;
 import io.flowminer.api.model.WorkflowExecution;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,4 +17,25 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
 
     @Query("SELECT MIN(w.startedAt) FROM WorkflowExecution w WHERE w.userId = :userId")
     LocalDateTime findMinStartedAtByUserId(@Param("userId") String userId);
+
+    @Query("SELECT w FROM WorkflowExecution w " +
+            "WHERE w.userId = :userId " +
+            "AND w.startedAt BETWEEN :startDate AND :endDate " +
+            "AND w.status IN :statuses")
+    List<WorkflowExecution> findByUserIdAndDateRangeAndStatuses(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("statuses") List<WorkflowExecutionStatus> statuses
+    );
+
+    @Query("SELECT w FROM WorkflowExecution w " +
+            "WHERE w.userId = :userId " +
+            "AND w.startedAt >= :startDate " +
+            "AND w.startedAt <= :endDate")
+    List<WorkflowExecution> findAllByUserIdAndDateRange(
+            @Param("userId") String userId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }
